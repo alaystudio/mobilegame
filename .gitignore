@@ -1,0 +1,16 @@
+node_modules/
+www/
+store/screenshots/*.tmp
+# Android derleme çıktıları ve yerel ayarlar
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+*.keystore
+*.jks
+# iOS
+ios/App/Pods/
+ios/App/output/
+ios/DerivedData/
+xcuserdata/

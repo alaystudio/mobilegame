@@ -88,19 +88,23 @@ Ayarların hepsi `ads.js` içindeki `CONFIG` nesnesinde.
 **Hile notu:** İstemci taraflı oyunlarda skor sahteciliği tamamen engellenemez. Oyun büyürse Firebase Anonymous Auth + App Check eklenmeli.
 
 ## Mağaza sürümü (Capacitor + AdMob)
-Gerçek reklamlar yalnızca mağaza uygulamasında çalışır. Web sürümünde bunların yerine "test reklamı" ekranı çıkar.
+Android ve iOS projeleri `android/` ve `ios/` klasörlerinde hazır (Capacitor 8). Mağaza metinleri, form cevapları ve yayın kontrol listesi: [`docs/MAGAZA.md`](docs/MAGAZA.md).
 
 ```bash
-npm init -y
-npm i @capacitor/core @capacitor/cli @capacitor/android @capacitor-community/admob
-npx cap init Yörünge com.alaystudio.yorunge --web-dir www
-mkdir -p www && cp -r index.html style.css config.js ads.js leaderboard.js game.js manifest.webmanifest icons www/
-npx cap add android
-npx cap sync && npx cap open android
+npm install
+npm run android     # www/ oluşturur, eşitler, Android Studio'yu açar
+npm run ios         # www/ oluşturur, eşitler, Xcode'u açar (Mac gerekir)
 ```
 
-- `android/app/src/main/AndroidManifest.xml` dosyasına AdMob uygulama kimliğini ekle:
-  `<meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-XXXX~YYYY"/>`
-- `ads.js` içinde `CONFIG.admob` bölümüne gerçek reklam birimi ID'lerini yaz ve `testing: false` yap. O zamana kadar Google'ın test ID'leri kullanılıyor.
-- `ads.js`, `Capacitor.Plugins.AdMob` bulunca otomatik olarak AdMob'a geçer. KVKK/GDPR onay formunu da (UMP) kendisi gösterir.
-- "Geçiş reklamlarını kaldır" için mağaza satın alma entegrasyonu (ör. RevenueCat) `ads.js` içindeki `purchaseRemoveAds` fonksiyonuna bağlanacak.
+- Web dosyalarını değiştirdikten sonra `npm run sync` çalıştır; `www/` klasörü her seferinde yeniden oluşur, elle düzenleme.
+- **Android derleme:** Android Studio (JDK 21 dahil gelir) → *Build → Generate Signed App Bundle*. İmza anahtarını (`.jks`) repoya koyma; `.gitignore` bunu engelliyor.
+- **iOS derleme:** Xcode → *Signing & Capabilities* bölümünde ekibini seç → *Product → Archive* → TestFlight'a yükle. Paketler Swift Package Manager ile gelir, CocoaPods gerekmez.
+- **Sürüm artırma:** `android/app/build.gradle` içinde `versionCode`/`versionName`, Xcode'da `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION`.
+
+**Reklamlar:** `ads.js`, uygulamada `Capacitor.Plugins.AdMob`'u bulunca otomatik olarak gerçek AdMob'a geçer. Sırasıyla GDPR onay formunu (UMP) ve iOS'ta ATT iznini gösterir, sonra reklamları önceden yükler. Şu an bütün kimlikler Google'ın **test** kimlikleri. Gerçek kimliklerin girileceği yerler `docs/MAGAZA.md` kontrol listesinde.
+
+**1.0 için kapalı olanlar:** Geçiş reklamı (`CONFIG.interstitial.enabled`) ve "Reklamları kaldır" satın alımı (`CONFIG.removeAdsEnabled`). Satın alma, uygulama içi ödeme entegrasyonu (ör. RevenueCat) bağlanınca `ads.js` içindeki `purchaseRemoveAds` fonksiyonuna eklenecek.
+
+**Yerel davranışlar (`native.js`):** iOS dahil gerçek titreşim (Haptics), gizli durum çubuğu, açılış ekranı, Android geri tuşu. Service worker sadece web sürümünde çalışır.
+
+**Görseller:** `npm run assets` ikon ve açılış ekranlarını, `npm run screenshots` mağaza ekran görüntülerini (`store/`) yeniden üretir. İkisi de sistemdeki Edge/Chrome'u kullanır.

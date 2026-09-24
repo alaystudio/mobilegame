@@ -17,15 +17,24 @@
   const CONFIG = {
     rewardedDailyCap: 10,          // günde en fazla ödüllü reklam
     interstitial: {
-      enabled: true,
-      minPlaySeconds: 180,         // ilk 3 dakika oyunda hiç geçiş reklamı yok
-      everyNGames: 4,              // sonra en fazla 4 oyunda bir
-      minGapSeconds: 150,          // iki geçiş reklamı arasında en az 2.5 dk
+      enabled: false,              // 1.0'da kapalı. Açınca: ilk 3 dk yok, en fazla 4 oyunda bir
+      minPlaySeconds: 180,
+      everyNGames: 4,
+      minGapSeconds: 150,
     },
+    // Uygulama içi satın alma (StoreKit / Play Billing) bağlanana kadar "Reklamları kaldır" gizli
+    removeAdsEnabled: false,
     admob: {
-      // Google'ın resmi TEST reklam birimleri. Yayından önce AdMob panelindeki gerçek ID'lerle değiştir.
-      rewardedId: 'ca-app-pub-3940256099942544/5224354917',
-      interstitialId: 'ca-app-pub-3940256099942544/1033173712',
+      // Google'ın resmi TEST reklam birimleri. Yayından önce AdMob panelindeki gerçek ID'lerle değiştir
+      // ve testing: false yap. (Uygulama ID'leri ayrıca AndroidManifest.xml ve Info.plist içinde.)
+      android: {
+        rewardedId: 'ca-app-pub-3940256099942544/5224354917',
+        interstitialId: 'ca-app-pub-3940256099942544/1033173712',
+      },
+      ios: {
+        rewardedId: 'ca-app-pub-3940256099942544/1712485313',
+        interstitialId: 'ca-app-pub-3940256099942544/4411468910',
+      },
       testing: true,
     },
   };
@@ -44,33 +53,93 @@
 
   // ------------------------------------------------------------ AdMob (Capacitor)
   const admobPlugin = () => window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob;
+  const platformIds = () => {
+    const p = window.Capacitor && window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : 'android';
+    return p === 'ios' ? CONFIG.admob.ios : CONFIG.admob.android;
+  };
+
+  // Tek seferlik olay bekleyici: dinleyiciyi kurar, ilk olayda çözülür ve kendini kaldırır
+  function once(AdMob, events, timeoutMs) {
+    return new Promise((resolve) => {
+      const handles = [];
+      let done = false;
+      const finish = (name, data) => {
+        if (done) return;
+        done = true;
+        handles.forEach((h) => Promise.resolve(h).then((x) => x && x.remove && x.remove()));
+        resolve({ name, data });
+      };
+      for (const ev of events) handles.push(AdMob.addListener(ev, (d) => finish(ev, d)));
+      if (timeoutMs) setTimeout(() => finish('timeout'), timeoutMs);
+    });
+  }
 
   const AdMobProvider = {
     name: 'admob',
-    ready: false,
+    rewardedReady: false,
+    interReady: false,
     async init() {
       const AdMob = admobPlugin();
-      await AdMob.initialize({ initializeForTesting: CONFIG.admob.testing });
-      // KVKK/GDPR onayı (Google UMP): gerekiyorsa formu göster
+      // 1) KVKK/GDPR onayı (Google UMP). Mesajı AdMob > Gizlilik ve mesajlaşma bölümünde yayınla.
       try {
         const info = await AdMob.requestConsentInfo();
         if (info.isConsentFormAvailable && info.status === 'REQUIRED') await AdMob.showConsentForm();
+        this.privacyRequired = info.privacyOptionsRequirementStatus === 'REQUIRED';
       } catch (e) { /* onay formu yoksa devam */ }
-      this.ready = true;
+      // 2) iOS: App Tracking Transparency izni (Android ve eski iOS'ta işlem yapmaz)
+      try {
+        const t = await AdMob.trackingAuthorizationStatus();
+        if (t && t.status === 'notDetermined') await AdMob.requestTrackingAuthorization();
+      } catch (e) { /* yok */ }
+      await AdMob.initialize({ initializeForTesting: CONFIG.admob.testing });
+      this.preloadRewarded();
+      if (CONFIG.interstitial.enabled) this.preloadInterstitial();
+    },
+    async preloadRewarded() {
+      if (this.rewardedReady) return true;
+      try {
+        await admobPlugin().prepareRewardVideoAd({ adId: platformIds().rewardedId, isTesting: CONFIG.admob.testing });
+        this.rewardedReady = true;
+      } catch (e) { this.rewardedReady = false; }
+      return this.rewardedReady;
+    },
+    async preloadInterstitial() {
+      if (this.interReady) return true;
+      try {
+        await admobPlugin().prepareInterstitial({ adId: platformIds().interstitialId, isTesting: CONFIG.admob.testing });
+        this.interReady = true;
+      } catch (e) { this.interReady = false; }
+      return this.interReady;
     },
     async rewarded() {
       const AdMob = admobPlugin();
-      await AdMob.prepareRewardVideoAd({ adId: CONFIG.admob.rewardedId, isTesting: CONFIG.admob.testing });
-      const reward = await AdMob.showRewardVideoAd();
-      return !!reward;
+      if (!this.rewardedReady && !(await this.preloadRewarded())) {
+        MockProvider.notice('Şu an reklam yok, biraz sonra tekrar dene.');
+        return false;
+      }
+      this.rewardedReady = false;
+      // Ödül olayı kapanmadan önce gelir; kapanınca sonucu bildir.
+      // Not: Android'de showRewardVideoAd ödül yoksa hiç çözülmez, bu yüzden olaylara bakıyoruz.
+      let earned = false;
+      const rewardH = AdMob.addListener('onRewardedVideoAdReward', () => { earned = true; });
+      const end = once(AdMob, ['onRewardedVideoAdDismissed', 'onRewardedVideoAdFailedToShow']);
+      AdMob.showRewardVideoAd().then(() => { earned = true; }).catch(() => {});
+      const r = await end;
+      Promise.resolve(rewardH).then((h) => h && h.remove && h.remove());
+      this.preloadRewarded();
+      return earned && r.name === 'onRewardedVideoAdDismissed';
     },
     async interstitial() {
       const AdMob = admobPlugin();
-      await AdMob.prepareInterstitial({ adId: CONFIG.admob.interstitialId, isTesting: CONFIG.admob.testing });
-      await AdMob.showInterstitial();
+      if (!this.interReady) { this.preloadInterstitial(); return; }
+      this.interReady = false;
+      const end = once(AdMob, ['interstitialAdDismissed', 'interstitialAdFailedToShow'], 60000);
+      AdMob.showInterstitial().catch(() => {});
+      await end;
+      this.preloadInterstitial();
     },
     async purchaseRemoveAds() {
-      // Mağaza sürümünde uygulama içi satın alma (ör. RevenueCat) buraya bağlanacak.
+      // Uygulama içi satın alma (ör. RevenueCat) bağlandığında burası doldurulacak.
       return false;
     },
   };
@@ -88,6 +157,10 @@
     name: 'mock',
     ready: true,
     async init() {},
+    notice(text) {
+      const el = overlay(`<p class="ad-text">${text}</p><div class="ad-actions"><button class="ad-btn" id="adOk">Tamam</button></div>`);
+      el.querySelector('#adOk').addEventListener('click', () => el.remove());
+    },
     rewarded() {
       return new Promise((resolve) => {
         let left = 5;
@@ -183,6 +256,12 @@
       finally { busy = false; }
     },
     noAds() { return st.noAds; },
+    removeAdsAvailable() { return CONFIG.removeAdsEnabled; },
+    // AB/BK: oyuncunun reklam onayını sonradan değiştirebileceği giriş noktası (Google UMP şartı)
+    privacyOptionsRequired() { return provider === AdMobProvider && !!AdMobProvider.privacyRequired; },
+    async showPrivacyOptions() {
+      try { await admobPlugin().showPrivacyOptionsForm(); } catch (e) { /* yok */ }
+    },
     async purchaseRemoveAds() {
       const ok = await provider.purchaseRemoveAds();
       if (ok) { st.noAds = true; persist(); }

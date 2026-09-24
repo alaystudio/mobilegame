@@ -1,0 +1,5 @@
+# Yörünge — AdMob yetkili satıcı kaydı
+# pub-0000000000000000 yerine AdMob > Ayarlar > Hesap bilgileri'ndeki yayıncı kimliğini yaz.
+# Bu dosya, mağaza listelemesindeki "geliştirici web sitesi" alan adının KÖKÜNDE yayınlanmalı
+# (ör. https://alaystudio.com/app-ads.txt veya https://alaystudio.github.io/app-ads.txt).
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0

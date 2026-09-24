@@ -508,6 +508,10 @@ canvas#game { position: fixed; inset: 0; display: block; }
 }
 .noads[disabled] { color: var(--accent); cursor: default; }
 
+/* ---------- Yasal bağlantılar ---------- */
+.legal { display: flex; justify-content: center; gap: 18px; margin-top: 6px; }
+.linkish { appearance: none; background: none; border: 0; font: inherit; font-size: 13px; font-weight: 700; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 6px 2px; }
+
 /* ---------- Test reklamı ---------- */
 .ad-overlay {
   position: fixed;

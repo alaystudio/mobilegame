@@ -201,7 +201,7 @@
     coin() { this.tone(988, 0.08, 'square', 0.1); this.tone(1319, 0.2, 'square', 0.1, null, 0.08); },
   };
   function vibrate(p) {
-    if (save.vibe && navigator.vibrate) { try { navigator.vibrate(p); } catch (e) { /* yok */ } }
+    if (save.vibe) YorungeNative.vibrate(p);
   }
 
   // ---------------------------------------------------------------- tuval & ölçüler
@@ -1391,6 +1391,8 @@
   function renderPowers() {
     $('powerStars').textContent = save.stars;
     const na = $('noAdsBtn');
+    na.classList.toggle('hidden', !YorungeAds.removeAdsAvailable() && !YorungeAds.noAds());
+    $('adPrefsBtn').classList.toggle('hidden', !YorungeAds.privacyOptionsRequired());
     na.textContent = YorungeAds.noAds() ? '✓ Geçiş reklamları kaldırıldı' : 'Geçiş reklamlarını kaldır';
     na.disabled = YorungeAds.noAds();
     const list = $('upgList');
@@ -1588,6 +1590,7 @@
   document.querySelectorAll('#board .tab').forEach((t) => t.addEventListener('click', () => { boardTab = t.dataset.tab; renderBoard(); }));
   $('nameSave').addEventListener('click', () => saveName());
   $('nameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') saveName(); });
+  $('adPrefsBtn').addEventListener('click', () => YorungeAds.showPrivacyOptions());
   $('noAdsBtn').addEventListener('click', async () => {
     if (YorungeAds.noAds()) return;
     const ok = await YorungeAds.purchaseRemoveAds();
@@ -1639,6 +1642,17 @@
     else if (S.mode === 'menu' && ['skins', 'missions', 'powers', 'board', 'gift'].every((id) => $(id).classList.contains('hidden'))) startRun();
   });
 
+  // Android geri tuşu: açık paneli kapat > oyunu duraklat > menüye dön > (menüdeyse) çık
+  YorungeNative.onBack(() => {
+    if (document.querySelector('.ad-overlay')) return true;
+    const sheet = ['board', 'powers', 'skins', 'missions', 'gift'].find((id) => !$(id).classList.contains('hidden'));
+    if (sheet) { $(sheet).classList.add('hidden'); updateMenuInfo(); return true; }
+    if (S.mode === 'play') { S.paused = true; return true; }
+    if (S.mode === 'revive') { finishRun(); return true; }
+    if (S.mode === 'over') { showMenu(); return true; }
+    return false;
+  });
+
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && S.mode === 'play') S.paused = true;
   });
@@ -1654,7 +1668,8 @@
   showMenu();
   requestAnimationFrame(frame);
 
-  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  // Mağaza uygulamasında dosyalar zaten cihazda; service worker sadece web/PWA için
+  if (!YorungeNative.isNative && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
 

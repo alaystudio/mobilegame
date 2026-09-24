@@ -1,0 +1,25 @@
+{
+  "appId": "com.alaystudio.yorunge",
+  "appName": "Yörünge",
+  "webDir": "www",
+  "backgroundColor": "#05060f",
+  "android": {
+    "backgroundColor": "#05060f"
+  },
+  "ios": {
+    "backgroundColor": "#05060f",
+    "contentInset": "never",
+    "scrollEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "backgroundColor": "#05060f",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "overlaysWebView": true,
+      "style": "DARK"
+    }
+  }
+}
