@@ -117,7 +117,8 @@ canvas#game { position: fixed; inset: 0; display: block; }
 .btn.icon {
   position: relative;
   flex: 1;
-  max-width: 110px;
+  max-width: 100px;
+  min-width: 0;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -295,3 +296,73 @@ canvas#game { position: fixed; inset: 0; display: block; }
 .toast b { color: var(--gold); }
 @keyframes toastIn { from { transform: translateY(-20px) scale(0.9); opacity: 0; } }
 @keyframes toastOut { to { transform: translateY(-10px); opacity: 0; } }
+
+/* ---------- Devam et ---------- */
+#revive { justify-content: center; background: rgba(3, 4, 12, 0.6); animation: fadeIn 0.2s ease; }
+.revive-card {
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  background: var(--panel);
+  border: 1px solid rgba(107, 224, 255, 0.35);
+  border-radius: 24px;
+  padding: 22px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.revive-card .big-score { font-size: 60px; }
+.revive-text { margin: 0 0 6px; color: var(--muted); font-weight: 600; }
+.revive-card .btn.primary { font-size: 18px; letter-spacing: 0.08em; padding-left: 0; }
+.revive-timer { width: 80%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 99px; overflow: hidden; }
+#reviveBar { height: 100%; background: #6be0ff; transform-origin: left; animation: drain 4s linear forwards; }
+@keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* ---------- Güçler ---------- */
+.sheet-note { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 0 0 14px; }
+.upg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.upg {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 12px;
+}
+.upg-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 900;
+  color: #0a0c1c;
+  background: var(--c);
+  box-shadow: 0 0 14px var(--c);
+}
+.upg-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.upg-body b { font-size: 15px; }
+.upg-info { font-size: 13px; color: var(--fg); }
+.upg-next { font-size: 12px; color: var(--muted); }
+.pips { display: flex; gap: 4px; margin-top: 4px; }
+.pips i { width: 14px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); }
+.pips i.on { background: var(--c); }
+.upg-buy {
+  flex: none;
+  appearance: none;
+  border: 0;
+  font: inherit;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--gold);
+  color: #1b1000;
+  cursor: pointer;
+}
+.upg-buy.cant { background: rgba(255, 255, 255, 0.1); color: var(--muted); }
+.upg-buy[disabled] { background: rgba(61, 232, 255, 0.15); color: var(--accent); }

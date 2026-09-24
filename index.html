@@ -31,6 +31,7 @@
   <div class="menu-bottom">
     <button class="btn primary" id="playBtn">OYNA</button>
     <div class="btn-row">
+      <button class="btn icon" id="powersBtn"><span class="ic">⚡</span>Güçler</button>
       <button class="btn icon" id="skinsBtn"><span class="ic">●</span>Toplar</button>
       <button class="btn icon" id="missionsBtn"><span class="ic">✓</span>Görevler<i class="dot hidden" id="missionDot"></i></button>
       <button class="btn icon" id="soundBtn"><span class="ic" id="soundIcon">♪</span><span id="soundLabel">Ses</span></button>
@@ -54,6 +55,31 @@
   <div class="over-actions">
     <button class="btn primary" id="retryBtn">TEKRAR</button>
     <button class="btn ghost" id="homeBtn">Menü</button>
+  </div>
+</section>
+
+<!-- DEVAM ET -->
+<section id="revive" class="screen hidden">
+  <div class="revive-card">
+    <div class="label">SKORUN</div>
+    <div class="big-score" id="reviveScore">0</div>
+    <p class="revive-text">Kaldığın yerden devam etmek ister misin?</p>
+    <button class="btn primary" id="reviveBtn">DEVAM ET · ★ <span id="reviveCost">30</span></button>
+    <div class="revive-timer"><div id="reviveBar"></div></div>
+    <button class="btn ghost" id="reviveSkip">Hayır, bitir</button>
+  </div>
+</section>
+
+<!-- GÜÇLER -->
+<section id="powers" class="sheet hidden">
+  <div class="sheet-panel">
+    <div class="sheet-head">
+      <h2>Güçler</h2>
+      <div class="pill star">★ <span id="powerStars">0</span></div>
+      <button class="close" data-close>✕</button>
+    </div>
+    <p class="sheet-note">Yıldız topladıkça kalkan dolar, engele çarpınca seni bir kez korur. Halkalarda çıkan güç toplarını topla. Geliştirdikçe güçler daha uzun sürer.</p>
+    <ul class="upg-list" id="upgList"></ul>
   </div>
 </section>
 
