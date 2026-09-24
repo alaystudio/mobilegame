@@ -1,5 +1,5 @@
 // Önbellek sürümünü her yayında artır ki oyuncular yeni sürümü alsın.
-const CACHE = 'yorunge-v1';
+const CACHE = 'yorunge-v2';
 const ASSETS = [
   './',
   './index.html',

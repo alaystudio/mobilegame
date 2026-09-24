@@ -53,11 +53,15 @@
   const LEVELS = [
     { at: 0,   bg1: '#141a3d', bg2: '#05060f', obs: '#ff3d6e', ring: '#8fa3ff', core: '#1d2658' },
     { at: 15,  bg1: '#2a0f45', bg2: '#08030f', obs: '#ff9f1c', ring: '#c69bff', core: '#3a1766' },
-    { at: 35,  bg1: '#06343a', bg2: '#010a0c', obs: '#ff4d8d', ring: '#6ff7e8', core: '#0b4a52' },
-    { at: 60,  bg1: '#3d0a16', bg2: '#0b0204', obs: '#ffd23f', ring: '#ff8fa6', core: '#5a1222' },
-    { at: 90,  bg1: '#0f3a12', bg2: '#020a02', obs: '#ff5ef0', ring: '#9dff8f', core: '#15521b' },
+    { at: 35,  bg1: '#06343a', bg2: '#010a0c', obs: '#ff4d8d', ring: '#6ff7e8', core: '#0b4a52', rings: 3, msg: '3. YÖRÜNGE AÇILDI' },
+    { at: 60,  bg1: '#3d0a16', bg2: '#0b0204', obs: '#ffd23f', ring: '#ff8fa6', core: '#5a1222', breath: true, msg: 'YÖRÜNGELER NEFES ALIYOR' },
+    { at: 90,  bg1: '#0f3a12', bg2: '#020a02', obs: '#ff5ef0', ring: '#9dff8f', core: '#15521b', rings: 4, msg: '4. YÖRÜNGE AÇILDI' },
     { at: 130, bg1: '#1a1a1a', bg2: '#000000', obs: '#ffffff', ring: '#ff3d6e', core: '#2a2a2a' },
-  ].map((l) => ({ at: l.at, bg1: hex(l.bg1), bg2: hex(l.bg2), obs: hex(l.obs), ring: hex(l.ring), core: hex(l.core) }));
+  ].map((l) => ({ ...l, bg1: hex(l.bg1), bg2: hex(l.bg2), obs: hex(l.obs), ring: hex(l.ring), core: hex(l.core) }));
+
+  // Halka sayısına göre iç/dış yarıçap (M'nin katı olarak)
+  const LAYOUT = { 2: [0.28, 0.42], 3: [0.24, 0.44], 4: [0.2, 0.46] };
+  const BREATH_AMP = 0.028;
 
   const SKINS = [
     { id: 'neon', name: 'Neon', price: 0, color: '#3de8ff' },
@@ -159,7 +163,21 @@
   const ctx = canvas.getContext('2d');
   let W, H, DPR, CX, CY, M, R_IN, R_OUT, BALL_R, OBS_T, OBS_L, CORE_R, SAFE_TOP;
   let bgStars = [];
-  const ringR = (i) => (i ? R_OUT : R_IN);
+  // Halka yarıçapı: yeni halka doğarken eski düzenden yenisine yumuşak geçiş + nefes alma
+  function ringR(i) {
+    const n = S.ringCount;
+    const [lo, hi] = LAYOUT[n];
+    let r = lerp(lo, hi, i / (n - 1)) * M;
+    if (S.ringAnim < 1 && LAYOUT[n - 1]) {
+      const [plo, phi] = LAYOUT[n - 1];
+      const rOld = lerp(plo, phi, Math.min(i, n - 2) / (n - 2)) * M;
+      r = lerp(rOld, r, easeOut(S.ringAnim));
+    }
+    if (S.breath > 0) r += Math.sin(S.time * 1.5 - i * 0.5) * BREATH_AMP * M * S.breath;
+    return r;
+  }
+  const innerR = () => LAYOUT[S.ringCount][0] * M;
+  const outerR = () => LAYOUT[S.ringCount][1] * M;
 
   function resize() {
     DPR = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -172,12 +190,13 @@
     R_OUT = M * 0.42; R_IN = M * 0.28;
     BALL_R = M * 0.03; OBS_T = M * 0.038; OBS_L = M * 0.048;
     CORE_R = R_IN * 0.58;
+    if (S) CORE_R = Math.min(CORE_R, innerR() * 0.72);
     const probe = document.createElement('div');
     probe.style.cssText = 'position:fixed;top:0;height:var(--sat);visibility:hidden';
     document.body.appendChild(probe);
     SAFE_TOP = probe.getBoundingClientRect().height || 0;
     probe.remove();
-    if (S) { S.radius = ringR(S.ring); S.from = S.radius; S.trail.length = 0; }
+    if (S) { S.from = S.radius = ringR(Math.min(S.ring, S.ringCount - 1)); S.trail.length = 0; }
     bgStars = [];
     const n = Math.floor((W * H) / 6000);
     for (let i = 0; i < n; i++) {
@@ -192,6 +211,7 @@
     obs: [], stars: [], parts: [], pops: [], trail: [],
     nextSpawn: 0, shake: 0, dieT: 0, coreKick: 0, flash: 0, levelIdx: 0,
     pal: null, paused: false, recordBeaten: false, tutorial: false, hint: 0, demoT: 0, deadAt: null,
+    ringCount: 2, ringAnim: 1, pendingRings: 0, breath: 0, dir: -1, dirHint: 0,
   };
   S.pal = {
     bg1: LEVELS[0].bg1.slice(), bg2: LEVELS[0].bg2.slice(), obs: LEVELS[0].obs.slice(),
@@ -271,14 +291,14 @@
   function gapAngle(mult = 1) {
     const w = omegaTarget();
     const tGap = Math.max(0.3, 0.64 - difficulty() * 0.0055);
-    const minA = 2 * ((OBS_L + BALL_R + OBS_T * 0.5) / R_IN) + w * SWITCH_T * 1.6;
+    const minA = 2 * ((OBS_L + BALL_R + OBS_T * 0.5) / innerR()) + w * SWITCH_T * 1.6;
     return Math.max(minA, w * tGap * mult);
   }
 
   function addObs(a, ring, opt = {}) {
     const o = {
-      a, ring, fromRing: ring, flipP: 1,
-      hw: opt.hw != null ? opt.hw : OBS_L / (opt.flip ? (R_IN + R_OUT) / 2 : ringR(ring)),
+      a, ring, fromRing: ring, flipP: 1, flipTo: opt.flipTo,
+      hw: opt.hw != null ? opt.hw : OBS_L / (opt.flip ? (ringR(ring) + ringR(opt.flipTo)) / 2 : ringR(ring)),
       flip: !!opt.flip, flipped: false, passed: false, perfect: false, born: S.time,
     };
     S.obs.push(o);
@@ -299,20 +319,26 @@
       return;
     }
 
+    const n = S.ringCount;
+    const rr = () => (Math.random() * n) | 0;
+    const other = (r) => { let o = (Math.random() * (n - 1)) | 0; return o >= r ? o + 1 : o; };
+
     const kind = weighted([
       ['single', 3],
       ['zig', d >= 3 ? 3 : 0],
       ['wall', d >= 6 ? 1.6 : 0],
       ['flip', d >= 18 ? 1.8 : 0],
       ['fastzig', d >= 30 ? 1.5 : 0],
+      ['gate', n >= 3 ? 2.2 : 0],
+      ['ladder', n >= 3 ? 1.4 : 0],
       ['stars', 1.1],
     ]);
 
     switch (kind) {
       case 'single': {
-        const r = chance(0.5) ? 1 : 0;
+        const r = rr();
         addObs(a, r);
-        if (chance(0.45)) addStar(a, 1 - r);
+        if (chance(0.45)) addStar(a, other(r));
         S.nextSpawn = a + G * 1.35;
         break;
       }
@@ -320,36 +346,56 @@
       case 'fastzig': {
         const fast = kind === 'fastzig';
         const g = fast ? gapAngle(0.75) : G;
-        const n = fast ? 2 + ((Math.random() * 2) | 0) : 2 + ((Math.random() * (d > 40 ? 4 : 2)) | 0);
-        const r0 = chance(0.5) ? 1 : 0;
-        for (let i = 0; i < n; i++) {
-          const r = (r0 + i) % 2;
+        const cnt = fast ? 2 + ((Math.random() * 2) | 0) : 2 + ((Math.random() * (d > 40 ? 4 : 2)) | 0);
+        let r = rr();
+        for (let i = 0; i < cnt; i++) {
           addObs(a + i * g, r);
-          if (chance(0.3)) addStar(a + i * g, 1 - r);
+          if (chance(0.3)) addStar(a + i * g, other(r));
+          r = other(r);
         }
-        S.nextSpawn = a + (n - 1) * g + G * 1.3;
+        S.nextSpawn = a + (cnt - 1) * g + G * 1.3;
         break;
       }
       case 'wall': {
-        const r = chance(0.5) ? 1 : 0;
+        const r = rr();
         const span = rand(0.45, 0.95);
         addObs(a + span / 2, r, { hw: span / 2 });
         const cnt = Math.floor(span / 0.2);
-        for (let i = 0; i <= cnt; i++) addStar(a + (span * i) / Math.max(1, cnt), 1 - r);
+        const sr = other(r);
+        for (let i = 0; i <= cnt; i++) addStar(a + (span * i) / Math.max(1, cnt), sr);
         S.nextSpawn = a + span + G * 1.2;
         break;
       }
       case 'flip': {
-        const r = chance(0.5) ? 1 : 0;
-        addObs(a, r, { flip: true });
+        const r = rr();
+        const to = r === 0 ? 1 : r === n - 1 ? n - 2 : r + (chance(0.5) ? 1 : -1);
+        addObs(a, r, { flip: true, flipTo: to });
         if (chance(0.5)) addStar(a, r);
         S.nextSpawn = a + G * 1.7;
         break;
       }
+      case 'gate': {
+        // tek boşluklu kapı: gel-git ile boşluğa ulaşmak için önünde yeterli boşluk bırak
+        const ga = a + omegaTarget() * 0.16 * (2 * n - 4);
+        const gap = rr();
+        for (let r = 0; r < n; r++) if (r !== gap) addObs(ga, r);
+        addStar(ga, gap);
+        S.nextSpawn = ga + G * 1.5;
+        break;
+      }
+      case 'ladder': {
+        const up = chance(0.5);
+        for (let i = 0; i < n; i++) {
+          const r = up ? i : n - 1 - i;
+          addObs(a + i * G, r);
+        }
+        S.nextSpawn = a + (n - 1) * G + G * 1.3;
+        break;
+      }
       case 'stars': {
-        const r = chance(0.5) ? 1 : 0;
+        const r = rr(), r2 = other(r);
         const step = 0.15;
-        for (let i = 0; i < 6; i++) addStar(a + i * step, i < 3 ? r : 1 - r);
+        for (let i = 0; i < 6; i++) addStar(a + i * step, i < 3 ? r : r2);
         S.nextSpawn = a + 5 * step + G;
         break;
       }
@@ -357,6 +403,7 @@
   }
 
   function spawnAhead() {
+    if (S.pendingRings || S.ringAnim < 1) return;
     while (S.nextSpawn < S.angle + LOOKAHEAD) spawnPattern();
   }
 
@@ -382,10 +429,11 @@
     Sound.init();
     checkDay(false);
     Object.assign(S, {
-      mode: 'play', angle: -Math.PI / 2, omega: OMEGA_START, ring: 1, radius: R_OUT, from: R_OUT, switchP: 1,
+      mode: 'play', angle: -Math.PI / 2, omega: OMEGA_START, ring: 1, radius: LAYOUT[2][1] * M, from: LAYOUT[2][1] * M, switchP: 1,
       score: 0, passed: 0, combo: 0, comboT: 0, maxCombo: 0, runStars: 0, runPerfects: 0,
       shake: 0, dieT: 0, flash: 0, levelIdx: 0, paused: false, recordBeaten: false,
       tutorial: !save.tutorialDone, tutSpawned: false, deadAt: null,
+      ringCount: 2, ringAnim: 1, pendingRings: 0, breath: 0, dir: -1, dirHint: 0,
     });
     S.hint = S.tutorial ? 1 : 0;
     S.obs.length = 0; S.stars.length = 0; S.pops.length = 0; S.trail.length = 0;
@@ -396,7 +444,9 @@
   function doSwitch() {
     const old = S.ring;
     S.from = S.radius;
-    S.ring = 1 - S.ring;
+    S.ring += S.dir;
+    if (S.ring >= S.ringCount - 1) S.dir = -1;
+    if (S.ring <= 0) S.dir = 1;
     S.switchP = 0;
     // PERFECT: bırakılan halkadaki engele çarpmaya çok az kala kaçış
     for (const o of S.obs) {
@@ -404,7 +454,7 @@
       const edge = o.a - o.hw - S.angle - (BALL_R + OBS_T * 0.5) / ringR(old);
       if (edge > -0.03 && edge < S.omega * PERFECT_T) { o.perfect = true; break; }
     }
-    Sound.tap(S.ring);
+    Sound.tap(S.ring > old ? 1 : 0);
     vibrate(6);
     const [x, y] = ballPos();
     burst(x, y, ballColor(), 5, 90, 2, 0.3);
@@ -438,15 +488,17 @@
 
     if (!S.recordBeaten && save.best > 0 && S.score > save.best) {
       S.recordBeaten = true;
-      popup('YENİ REKOR!', CX, CY - R_OUT - 40, '#ffd84d', 30, 1.6);
+      popup('YENİ REKOR!', CX, CY - outerR() - 40, '#ffd84d', 30, 1.6);
       Sound.record();
       vibrate([30, 40, 30]);
-      for (let i = 0; i < 3; i++) burst(CX + rand(-80, 80), CY - R_OUT - 30, `hsl(${rand(0, 360)},100%,65%)`, 16, 300, 3, 1);
+      for (let i = 0; i < 3; i++) burst(CX + rand(-80, 80), CY - outerR() - 30, `hsl(${rand(0, 360)},100%,65%)`, 16, 300, 3, 1);
     }
     const next = LEVELS[S.levelIdx + 1];
     if (next && S.score >= next.at) {
       S.levelIdx++;
-      popup(`SEVİYE ${S.levelIdx + 1}`, CX, CY + R_OUT + 44, '#fff', 28, 1.6);
+      popup(`SEVİYE ${S.levelIdx + 1}`, CX, CY + outerR() + 44, '#fff', 28, 1.6);
+      if (next.msg) popup(next.msg, CX, CY + outerR() + 76, rgba(next.ring), 17, 2.6);
+      if (next.rings) S.pendingRings = next.rings;
       Sound.level();
       S.flash = 0.5;
     }
@@ -522,7 +574,7 @@
     } else if (S.mode === 'menu') {
       S.angle += 1.3 * dt;
       S.demoT += dt;
-      if (S.demoT > 0.9) { S.demoT = 0; S.from = S.radius; S.ring = 1 - S.ring; S.switchP = 0; }
+      if (S.demoT > 0.9) { S.demoT = 0; S.from = S.radius; S.ring = S.ring ? 0 : 1; S.switchP = 0; }
       if (S.switchP < 1) S.switchP = Math.min(1, S.switchP + dt / SWITCH_T);
       S.radius = lerp(S.from, ringR(S.ring), easeOut(S.switchP));
       pushTrail();
@@ -549,6 +601,32 @@
   }
 
   function stepPlay(dt) {
+    // yeni halka: ekrandaki engeller geçilince doğar
+    if (S.pendingRings && S.obs.every((o) => o.passed)) {
+      S.ringCount = S.pendingRings;
+      S.pendingRings = 0;
+      S.ringAnim = 0;
+      if (S.ring < S.ringCount - 1 && S.ring > 0) { /* yön korunur */ } else if (S.ring === 0) S.dir = 1;
+      else S.dir = -1;
+      S.dirHint = 4;
+      S.flash = 0.6;
+      S.shake = 5;
+      Sound.level();
+      vibrate([20, 30, 20]);
+      for (let i = 0; i < 24; i++) {
+        const [x, y] = polar(rand(0, TAU), outerR());
+        burst(x, y, rgba(S.pal.ring), 1, 120, 2.5, 0.8);
+      }
+    }
+    if (S.ringAnim < 1) {
+      S.ringAnim = Math.min(1, S.ringAnim + dt / 1.1);
+      if (S.ringAnim >= 1) S.nextSpawn = S.angle + Math.PI * 0.9;
+    }
+    if (S.ring > S.ringCount - 1) S.ring = S.ringCount - 1;
+    const breathOn = LEVELS.slice(0, S.levelIdx + 1).some((l) => l.breath);
+    S.breath += ((breathOn ? 1 : 0) - S.breath) * Math.min(1, dt * 0.6);
+    S.dirHint = Math.max(0, S.dirHint - dt);
+    CORE_R = Math.min(R_IN * 0.58, innerR() * 0.72);
     S.omega += (omegaTarget() - S.omega) * Math.min(1, dt * 2);
     S.angle += S.omega * dt;
     if (S.switchP < 1) S.switchP = Math.min(1, S.switchP + dt / SWITCH_T);
@@ -560,7 +638,7 @@
     for (let i = S.obs.length - 1; i >= 0; i--) {
       const o = S.obs[i];
       if (o.flip && !o.flipped && o.a - S.angle < S.omega * 0.62) {
-        o.flipped = true; o.fromRing = o.ring; o.ring = 1 - o.ring; o.flipP = 0;
+        o.flipped = true; o.fromRing = o.ring; o.ring = o.flipTo; o.flipP = 0;
         Sound.flip();
       }
       if (o.flipP < 1) o.flipP = Math.min(1, o.flipP + dt / 0.2);
@@ -608,6 +686,27 @@
     ctx.closePath();
   }
 
+  // Topun yanında bir sonraki dokunuşun yönünü gösteren ok (gel-git kontrolü)
+  function drawDirArrow(col) {
+    const a = S.angle;
+    const pulse = Math.sin(S.time * 8) * 0.5 + 0.5;
+    const off = BALL_R * (2.1 + pulse * 0.4);
+    const r = S.radius + S.dir * off;
+    const x = CX + Math.cos(a) * r, y = CY + Math.sin(a) * r;
+    const ux = Math.cos(a) * S.dir, uy = Math.sin(a) * S.dir;   // ok yönü
+    const px = -uy, py = ux;                                     // dik
+    const s = BALL_R * 0.75;
+    ctx.fillStyle = col;
+    ctx.globalAlpha = 0.75 + 0.25 * pulse;
+    ctx.beginPath();
+    ctx.moveTo(x + ux * s, y + uy * s);
+    ctx.lineTo(x - ux * s * 0.4 + px * s * 0.8, y - uy * s * 0.4 + py * s * 0.8);
+    ctx.lineTo(x - ux * s * 0.4 - px * s * 0.8, y - uy * s * 0.4 - py * s * 0.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
   function render() {
     const P = S.pal;
     ctx.save();
@@ -638,9 +737,10 @@
     // halkalar
     const alive = S.mode === 'play' || S.mode === 'menu';
     ctx.lineWidth = 2;
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < S.ringCount; i++) {
       const active = alive && S.ring === i;
-      ctx.strokeStyle = rgba(P.ring, active ? 0.4 : 0.16);
+      const born = i === S.ringCount - 1 && S.ringAnim < 1 ? easeOut(S.ringAnim) : 1;
+      ctx.strokeStyle = rgba(P.ring, (active ? 0.4 : 0.16) * born + (1 - born) * 0.9 * Math.sin(born * Math.PI));
       arc(ringR(i), 0, TAU);
       ctx.stroke();
     }
@@ -717,7 +817,7 @@
         ctx.setLineDash([4, 7]);
         ctx.strokeStyle = rgba(P.obs, al * (0.35 + 0.25 * Math.sin(S.time * 14)));
         ctx.lineWidth = OBS_T * 0.55;
-        arc(ringR(1 - o.ring), o.a - o.hw, o.a + o.hw);
+        arc(ringR(o.flipTo), o.a - o.hw, o.a + o.hw);
         ctx.stroke();
         ctx.setLineDash([]);
       }
@@ -751,6 +851,7 @@
       ctx.beginPath(); ctx.arc(x, y, BALL_R, 0, TAU); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       ctx.beginPath(); ctx.arc(x - BALL_R * 0.3, y - BALL_R * 0.3, BALL_R * 0.35, 0, TAU); ctx.fill();
+      if (S.ringCount > 2 && S.mode === 'play') drawDirArrow(col);
     }
 
     // parçacıklar
@@ -793,8 +894,21 @@
       ctx.fillText(`★ ${save.stars + S.runStars}`, W - 18, top);
     }
 
+    if (S.mode === 'play' && S.dirHint > 0 && S.ringAnim >= 1) {
+      const y = CY + outerR() + 100;
+      ctx.textAlign = 'center';
+      ctx.globalAlpha = Math.min(1, S.dirHint);
+      ctx.fillStyle = '#fff';
+      ctx.font = '800 17px system-ui, sans-serif';
+      ctx.fillText('Top gel-git yapar', CX, y);
+      ctx.font = '600 14px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText('Oktaki yön, bir sonraki dokunuşun', CX, y + 22);
+      ctx.globalAlpha = 1;
+    }
+
     if (S.mode === 'play' && S.hint > 0) {
-      const y = CY + R_OUT + 70;
+      const y = CY + outerR() + 70;
       ctx.textAlign = 'center';
       ctx.fillStyle = `rgba(255,255,255,${0.65 + 0.35 * Math.sin(S.time * 6)})`;
       ctx.font = '800 18px system-ui, sans-serif';
@@ -853,6 +967,8 @@
     S.mode = 'menu';
     S.obs.length = 0; S.stars.length = 0; S.pops.length = 0;
     S.score = 0; S.combo = 0; S.levelIdx = 0;
+    S.ringCount = 2; S.ringAnim = 1; S.pendingRings = 0; S.breath = 0; S.dir = -1;
+    CORE_R = R_IN * 0.58;
     S.radius = ringR(S.ring); S.from = S.radius; S.switchP = 1;
     updateMenuInfo();
     show('menu');
@@ -961,7 +1077,7 @@
 
   // ---------------------------------------------------------------- başlat
   resize();
-  S.radius = R_OUT; S.from = R_OUT;
+  S.radius = ringR(1); S.from = S.radius;
   checkDay(true);
   showMenu();
   requestAnimationFrame(frame);
