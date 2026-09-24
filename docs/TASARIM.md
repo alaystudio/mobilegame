@@ -68,6 +68,23 @@ Güç topları 5. engelden sonra, desenlerin arasındaki boşluklarda (~%15 ihti
 
 Bu sistem yıldızlara kalıcı bir değer katar ve "bir tur daha oynayıp geliştireyim" döngüsünü kurar.
 
+## Günlük Meydan Okuma
+- Her gün tarihten üretilen **tohumla** herkes aynı engel ve yıldız dizisini görür.
+- Günün kuralı da tohumdan seçilir: Hızlı Başlangıç, Üç Yörünge, Güçsüz, Nefes, Yıldız Yağmuru.
+- **Günde 1 hak + reklamla 1 hak.** Hak sistemi sadece bu modda var, ana oyun sınırsız.
+- Adalet için meydan okumada güç geliştirmeleri, devam etme ve güçlü başlangıç kapalı.
+- Skor, günün sıralama tablosuna gider. Oyun sonunda "Bugünkü sıran: #3 / 12" gösterilir.
+
+## Sıralama
+- İki tablo var: **Tüm Zamanlar** (her oyuncunun rekoru) ve **Bugünün Meydan Okuması**.
+- Oyuncu adı sıralama ekranından değiştirilir. Varsayılan ad "Oyuncu1234" gibi otomatik üretilir.
+- Sağlayıcılar: Firebase Firestore (yayın), claude.ai önizleme veritabanı, yerel cihaz (yedek).
+
+## Gelir modeli
+- Ana oyun sınırsız ve ücretsiz. **Reklam, daha fazla oynamak için değil, daha iyi oynamak için izlenir.**
+- Ödüllü reklamlar (günde en fazla 10): devam et, 2x yıldız, 2x günlük ödül, güçlü başla, +1 meydan okuma hakkı.
+- Geçiş reklamı çok seyrek: ilk 3 dakika yok, sonra en fazla 4 oyunda bir, en az 2.5 dakika arayla. Satın alımla kaldırılabilir.
+
 ## Bağımlılık kancaları
 - **Anında tekrar:** Ölümden ~1 sn sonra tek dokunuşla yeni tur.
 - **Az kaldı etkisi:** Oyun sırasında "Rekora 3!" uyarısı. Oyun sonunda "Rekora X puan kaldı!".
