@@ -1,10 +1,11 @@
 // Önbellek sürümünü her yayında artır ki oyuncular yeni sürümü alsın.
-const CACHE = 'blok-v1';
+const CACHE = 'bloom-v1';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './i18n.js',
+  './garden.js',
   './game.js',
   './manifest.webmanifest',
   './icons/icon.svg',

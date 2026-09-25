@@ -1,14 +1,14 @@
-/* Block Journey — drag blocks onto an 8×8 board, clear rows and columns.
+/* Bloom Blast — drag blocks onto an 8×8 board, clear rows and columns, earn seeds, grow a garden.
  * Adventure: procedurally generated levels (seeded by level number, so every player
- * sees the same board) with three goal types: collect gems, reach a score, clear lines.
- * Classic: endless, beat your best score.
+ * sees the same board) with three goal types: bloom flowers (clear blocks of given colors),
+ * reach a score, clear lines. Classic: endless, beat your best score.
+ * Every clear earns seeds; seeds build the garden. Combos make the garden strip above the board bloom.
  */
 (() => {
   'use strict';
 
   // ---------------------------------------------------------------- helpers
   const $ = (id) => document.getElementById(id);
-  const TAU = Math.PI * 2;
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
   const lerp = (a, b, t) => a + (b - a) * t;
   const rand = (a, b) => a + Math.random() * (b - a);
@@ -24,31 +24,43 @@
   const hexRgb = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
   const shade = (h, amt) => { const c = hexRgb(h).map((v) => clamp(Math.round(v + 255 * amt), 0, 255)); return `rgb(${c.join(',')})`; };
   const alpha = (a) => clamp(a, 0, 1).toFixed(3);
+  const Garden = window.Garden;
+  const TASKS = Garden.TASKS;
 
   // ---------------------------------------------------------------- save + language
-  const SAVE_KEY = 'bj.save.v1';
+  const SAVE_KEY = 'bb.save.v1';
   const deviceLang = (navigator.language || 'en').toLowerCase().startsWith('tr') ? 'tr' : 'en';
-  const DEFAULTS = { level: 1, stars: {}, best: 0, settings: { sound: true, vibe: true, lang: deviceLang } };
+  const DEFAULTS = { level: 1, stars: {}, best: 0, seeds: 0, garden: TASKS.map(() => -1), settings: { sound: true, vibe: true, lang: deviceLang } };
   const save = (() => {
+    const fresh = () => JSON.parse(JSON.stringify(DEFAULTS));
     try {
       const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
-      return { ...JSON.parse(JSON.stringify(DEFAULTS)), ...s, settings: { ...DEFAULTS.settings, ...(s.settings || {}) } };
-    } catch (e) { return JSON.parse(JSON.stringify(DEFAULTS)); }
+      const out = { ...fresh(), ...s, settings: { ...DEFAULTS.settings, ...(s.settings || {}) } };
+      if (!Array.isArray(out.garden) || out.garden.length !== TASKS.length) out.garden = TASKS.map((_, i) => (Array.isArray(s.garden) && s.garden[i] >= 0 ? s.garden[i] : -1));
+      return out;
+    } catch (e) { return fresh(); }
   })();
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* private mode */ } };
-  const I18N = window.BJ_I18N;
-  const t = (k, p = {}) => String((I18N[save.settings.lang] || I18N.en)[k] ?? I18N.en[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => p[x]);
+  const I18N = window.BB_I18N;
+  const dict = () => I18N[save.settings.lang] || I18N.en;
+  const t = (k, p = {}) => String(dict()[k] ?? I18N.en[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => p[x]);
+  const tl = (k, i) => (dict()[k] || I18N.en[k] || [])[i] || '';
   function applyI18n() {
     document.documentElement.lang = save.settings.lang;
     document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
     document.title = t('appName');
   }
+  function toast(text) {
+    const el = document.createElement('div');
+    el.className = 'toast'; el.textContent = text;
+    $('toasts').appendChild(el);
+    setTimeout(() => el.remove(), 2800);
+  }
 
   // ---------------------------------------------------------------- pieces
-  const COLORS = ['#ff5a5f', '#ffb400', '#3ec76a', '#2fa8ff', '#9b6bff', '#ff7ab8', '#1fc9b8'];
-  const GEMS = { ruby: '#ff4d6d', sapphire: '#43a8ff', emerald: '#2fd07a' };
-  const GEM_KEYS = Object.keys(GEMS);
+  const COLORS = Garden.FLOWER_COLORS; // each block color is a flower
+  const NC = COLORS.length;
 
   const norm = (cells) => {
     const mr = Math.min(...cells.map((c) => c[0])), mc = Math.min(...cells.map((c) => c[1]));
@@ -90,38 +102,41 @@
     const rng = mulberry32(n * 7919 + 13);
     const hard = n % 10 === 0;
     const d = clamp((n - 1) / 300, 0, 1); // difficulty climbs slowly over the first 300 levels, then holds
-    const type = n <= 2 ? 'gems' : n === 3 ? 'lines' : ['gems', 'score', 'lines'][(rng() * 3) | 0];
+    const type = n <= 2 ? 'flowers' : n === 3 ? 'lines' : ['flowers', 'score', 'lines'][(rng() * 3) | 0];
     const density = n <= 3 ? 0.08 : clamp(0.07 + d * 0.2 + (hard ? 0.07 : 0) + (rng() - 0.5) * 0.06, 0.05, 0.36);
     const pattern = n <= 3 ? 'scatter' : PATTERNS[(rng() * PATTERNS.length) | 0];
     const boost = hard ? 1.15 : 1;
     let goal, par;
-    if (type === 'gems') {
+    if (type === 'flowers') {
       const kinds = n < 8 ? 1 : n < 30 ? (rng() < 0.5 ? 1 : 2) : rng() < 0.35 ? 3 : 2;
-      const keys = [...GEM_KEYS].sort(() => rng() - 0.5).slice(0, kinds);
+      const keys = [...Array(NC).keys()].sort(() => rng() - 0.5).slice(0, kinds);
       goal = {};
-      for (const k of keys) goal[k] = Math.max(3, Math.round((3 + d * 9 + rng() * 2) * boost / Math.sqrt(kinds)));
-      par = Math.round(Object.values(goal).reduce((a, b) => a + b, 0) * 1.6 + 9);
+      for (const k of keys) goal[k] = n <= 5 ? 4 + n : Math.max(5, Math.round((7 + d * 14 + rng() * 3) * boost / Math.sqrt(kinds)));
+      par = Math.round(Object.values(goal).reduce((a, b) => a + b, 0) * 0.9 + 6);
     } else if (type === 'score') {
-      goal = { score: Math.round(((200 + Math.min(n, 300) * 2.5 + Math.max(0, n - 300)) * boost) / 50) * 50 };
-      par = Math.round(goal.score / 9);
+      goal = { score: Math.round(((250 + Math.min(n, 300) * 3 + Math.max(0, n - 300)) * boost) / 50) * 50 };
+      par = Math.round(goal.score / 13);
     } else {
       goal = { lines: Math.round((4 + d * 14) * boost) };
-      par = Math.round(goal.lines * 2.6 + 3);
+      par = Math.round(goal.lines * 2.1 + 3);
     }
     return { n, hard, d, type, density, pattern, goal, par, seed: n * 104729 + 7 };
   }
+  const goalColors = (cfg) => (cfg && cfg.type === 'flowers' ? Object.keys(cfg.goal).map(Number) : []);
 
   function buildBoard(cfg) {
     const rng = mulberry32(cfg.seed);
     const g = Array.from({ length: N }, () => Array(N).fill(null));
-    const col = () => COLORS[(rng() * COLORS.length) | 0];
-    const set = (r, c, color) => { if (r >= 0 && r < N && c >= 0 && c < N) g[r][c] = { color, gem: null }; };
+    const gc = goalColors(cfg);
+    // flower levels lean toward the goal colors so the goal is visible from the start
+    const col = () => (gc.length && rng() < 0.4 ? gc[(rng() * gc.length) | 0] : (rng() * NC) | 0);
+    const set = (r, c, ci) => { if (r >= 0 && r < N && c >= 0 && c < N) g[r][c] = { ci }; };
     const p = cfg.density;
     switch (cfg.pattern) {
       case 'mirror': for (let r = 0; r < N; r++) for (let c = 0; c < N / 2; c++) if (rng() < p) { const k = col(); set(r, c, k); set(r, N - 1 - c, k); } break;
       case 'rows': { const k = col(); for (let r = N - 1; r >= 0; r--) if (rng() < p * 1.6) for (let c = 0; c < N; c++) if (rng() < 0.8) set(r, c, k); break; }
-      case 'frame': for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const ring = Math.min(r, c, N - 1 - r, N - 1 - c); if (rng() < p * (ring === 0 ? 2.2 : ring === 1 ? 0.8 : 0.3)) set(r, c, ring === 0 ? COLORS[3] : col()); } break;
-      case 'diamond': for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const dd = Math.abs(r - 3.5) + Math.abs(c - 3.5); if (dd < 1 + p * 8 && rng() < 0.85) set(r, c, dd < 2 ? COLORS[4] : COLORS[5]); } break;
+      case 'frame': { const k = col(); for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const ring = Math.min(r, c, N - 1 - r, N - 1 - c); if (rng() < p * (ring === 0 ? 2.2 : ring === 1 ? 0.8 : 0.3)) set(r, c, ring === 0 ? k : col()); } break; }
+      case 'diamond': { const a = col(), b = col(); for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const dd = Math.abs(r - 3.5) + Math.abs(c - 3.5); if (dd < 1 + p * 8 && rng() < 0.85) set(r, c, dd < 2 ? a : b); } break; }
       case 'blocks': { let tries = 0; while (count(g) < p * N * N && tries++ < 60) { const r = (rng() * (N - 1)) | 0, c = (rng() * (N - 1)) | 0, k = col(); set(r, c, k); set(r + 1, c, k); set(r, c + 1, k); set(r + 1, c + 1, k); } break; }
       default: for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (rng() < p) set(r, c, col());
     }
@@ -129,15 +144,6 @@
     for (let i = 0; i < N; i++) {
       if (g[i].every(Boolean)) g[i][(rng() * N) | 0] = null;
       if (g.every((row) => row[i])) g[(rng() * N) | 0][i] = null;
-    }
-    // gems sit inside some of the starting blocks
-    if (cfg.type === 'gems') {
-      const filled = [];
-      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (g[r][c]) filled.push(g[r][c]);
-      filled.sort(() => rng() - 0.5);
-      for (const [k, need] of Object.entries(cfg.goal)) {
-        for (let i = 0; i < Math.ceil(need * 0.5) && filled.length; i++) filled.pop().gem = k;
-      }
     }
     return g;
   }
@@ -169,42 +175,73 @@
     place() { this.tone(210, 0.1, 'sine', 0.4, 0, 120); this.tone(1400, 0.02, 'square', 0.03); },
     clear(lines, streak) {
       const scale = [0, 2, 4, 7, 9, 12, 14, 16];
-      const base = 523 * Math.pow(2, Math.min(streak, 6) / 12);
+      const base = 523 * Math.pow(2, Math.min(streak, 8) / 12);
       for (let i = 0; i < Math.min(lines + 2, 7); i++) this.tone(base * Math.pow(2, scale[i] / 12), 0.22, 'triangle', 0.18, i * 0.05);
     },
-    gem() { this.tone(1760, 0.16, 'sine', 0.14); this.tone(2637, 0.2, 'sine', 0.08, 0.04); },
+    bloom() { [1047, 1319, 1568, 2093].forEach((f, i) => this.tone(f, 0.25, 'sine', 0.1, 0.12 + i * 0.06)); },
+    seed() { this.tone(1568, 0.08, 'sine', 0.06); },
+    build() { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => this.tone(f, 0.35, 'triangle', 0.16, i * 0.07)); },
     win() { [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.3, 'triangle', 0.2, i * 0.09)); },
     fail() { [392, 330, 262].forEach((f, i) => this.tone(f, 0.35, 'sine', 0.2, i * 0.14)); },
   };
   const vibrate = (ms) => { if (save.settings.vibe && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) { /* none */ } } };
 
   // ---------------------------------------------------------------- state
+  const newRun = () => ({ flowers: [], trees: [], flies: [], rainbow: null, burst: null });
   const S = {
     mode: 'home', // home | map | play | over
     kind: 'adventure', // adventure | classic
     cfg: null, grid: null, tray: [null, null, null],
-    score: 0, streak: 0, pieces: 0, collected: {}, lines: 0,
+    score: 0, streak: 0, miss: 0, pieces: 0, collected: {}, lines: 0, runSeeds: 0,
     drag: null, fx: [], parts: [], pops: [], t: 0, trayAnim: 0, busy: false,
+    run: newRun(), appear: null, seedPulse: -9,
   };
 
   // ---------------------------------------------------------------- canvas + layout
   const cv = $('cv');
   const ctx = cv.getContext('2d');
-  let W = 0, H = 0, DPR = 1, cs = 40, bx = 0, by = 0, slots = [];
+  let W = 0, H = 0, DPR = 1, cs = 40, bx = 0, by = 0, slots = [], stripY = 70, stripH = 90;
+  function hudBottom() {
+    const b = document.querySelector('#hud .bar');
+    const r = b && b.getBoundingClientRect();
+    return r && r.bottom > 0 ? r.bottom : 70;
+  }
   function layout() {
     DPR = Math.min(window.devicePixelRatio || 1, 2.5);
     W = innerWidth; H = innerHeight;
     cv.width = Math.floor(W * DPR); cv.height = Math.floor(H * DPR);
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    const top = 96, bottom = 24;
+    stripY = hudBottom() + 8;
+    stripH = Math.round(clamp(H * 0.13, 56, 120));
+    const top = stripY + stripH + 12, bottom = 20;
     const avail = Math.max(100, H - top - bottom);
-    cs = Math.floor(Math.min((W - 28) / N, avail / 11.8, 64));
+    cs = Math.floor(Math.min((W - 28) / N, avail / 11.6, 64));
     const total = cs * N + cs * 0.6 + cs * 3.2;
     bx = Math.round((W - cs * N) / 2);
-    by = Math.round(top + Math.max(0, (avail - total) * 0.4));
+    by = Math.round(top + Math.max(0, (avail - total) * 0.35));
     const ty = by + cs * N + cs * 0.6, sw = Math.min(W, cs * N + 40) / 3, sx0 = (W - sw * 3) / 2;
     slots = [0, 1, 2].map((i) => ({ x: sx0 + sw * i, y: ty, w: sw, h: cs * 3.2 }));
+  }
+  // the home garden is framed in the space above the bottom panel
+  let panelTop = 0;
+  function measurePanel() {
+    const r = document.querySelector('#home .home-bottom').getBoundingClientRect();
+    panelTop = r.top > 0 ? r.top : H * 0.65;
+  }
+  const homeView = () => {
+    const pt = panelTop || H * 0.65;
+    return { x: 0, y: 0, w: W, h: H, cx: W / 2, groundY: pt * 0.52, depth: pt * 0.4, s: Math.min(W / 2.15, pt * 0.42), built: save.garden, t: S.t, appear: appearState() };
+  };
+  const stripView = () => {
+    const x = 10, w = W - 20;
+    return { x, y: stripY, w, h: stripH, cx: W / 2, groundY: stripY + stripH * 0.6, depth: stripH * 0.4, s: Math.min(w / 2.1, stripH * 0.85), built: save.garden, t: S.t, run: S.run };
+  };
+  function appearState() {
+    if (!S.appear) return null;
+    const k = (S.t - S.appear.start) / 0.9;
+    if (k > 1.3) { S.appear = null; return null; }
+    return { task: S.appear.task, k: clamp(k, 0, 1) };
   }
 
   // ---------------------------------------------------------------- drawing
@@ -217,7 +254,8 @@
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
   }
-  function drawBlock(x, y, s, color, a = 1, gem = null) {
+  // emblem: a white flower silhouette on blocks whose color is part of the level goal
+  function drawBlock(x, y, s, color, a = 1, emblemCi = -1) {
     ctx.globalAlpha = a;
     const r = s * 0.16, p = s * 0.04;
     rr(x + p, y + p, s - p * 2, s - p * 2, r);
@@ -228,18 +266,12 @@
     ctx.fillStyle = shade(color, 0.08); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     rr(x + s * 0.16, y + s * 0.12, s * 0.28, s * 0.1, s * 0.05); ctx.fill();
-    if (gem) drawGem(x + s / 2, y + s * 0.47, s * 0.34, GEMS[gem]);
+    if (emblemCi >= 0) { ctx.globalAlpha = a * 0.8; Garden.drawHead(ctx, x + s / 2, y + s * 0.46, s * 0.24, emblemCi, 'rgba(255,255,255,0.9)'); }
     ctx.globalAlpha = 1;
   }
-  function drawGem(cx, cy, r, color) {
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy - r * 0.2); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy - r * 0.2); ctx.closePath();
-    ctx.fillStyle = color; ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = Math.max(1, r * 0.14); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx - r, cy - r * 0.2); ctx.lineTo(cx + r, cy - r * 0.2); ctx.moveTo(cx, cy - r); ctx.lineTo(cx - r * 0.35, cy - r * 0.2); ctx.lineTo(cx, cy + r); ctx.lineTo(cx + r * 0.35, cy - r * 0.2); ctx.closePath();
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = Math.max(0.8, r * 0.08); ctx.stroke();
-  }
   const pieceSize = (p) => { let h = 0, w = 0; for (const [r, c] of p.cells) { h = Math.max(h, r + 1); w = Math.max(w, c + 1); } return [w, h]; };
+  const isGoalColor = (ci) => S.kind === 'adventure' && S.cfg.type === 'flowers' && S.cfg.goal[ci] != null && (S.collected[ci] || 0) < S.cfg.goal[ci];
+  const emblem = (ci) => (isGoalColor(ci) ? ci : -1);
 
   // where the dragged piece would land (top-left cell), or null
   function dropTarget() {
@@ -276,33 +308,37 @@
 
   function render() {
     ctx.clearRect(0, 0, W, H);
+    if (S.mode === 'home') { Garden.drawScene(ctx, homeView()); drawParticles(); return; }
     if (S.mode !== 'play' && S.mode !== 'over') return;
-    // board
-    rr(bx - 8, by - 8, cs * N + 16, cs * N + 16, 16);
-    ctx.fillStyle = '#152049'; ctx.fill();
+    drawStrip();
+    // board: a wooden planter with dark soil cells
+    rr(bx - 9, by - 9, cs * N + 18, cs * N + 18, 18);
+    ctx.fillStyle = '#6b4a2e'; ctx.fill();
+    rr(bx - 5, by - 5, cs * N + 10, cs * N + 10, 14);
+    ctx.fillStyle = '#3a2a1e'; ctx.fill();
     const target = dropTarget();
     const hl = target ? wouldClear(S.tray[S.drag.slot], target[0], target[1]) : { rows: [], cols: [] };
-    const hlColor = S.drag ? S.tray[S.drag.slot].color : null;
+    const hlColor = S.drag ? COLORS[S.tray[S.drag.slot].ci] : null;
     for (let r = 0; r < N; r++) {
       for (let c = 0; c < N; c++) {
         const x = bx + c * cs, y = by + r * cs, cell = S.grid[r][c];
         const inHl = hl.rows.includes(r) || hl.cols.includes(c);
-        if (cell) drawBlock(x, y, cs, inHl ? hlColor : cell.color, 1, cell.gem);
+        if (cell) drawBlock(x, y, cs, inHl ? hlColor : COLORS[cell.ci], 1, emblem(cell.ci));
         else {
           rr(x + cs * 0.05, y + cs * 0.05, cs * 0.9, cs * 0.9, cs * 0.14);
-          ctx.fillStyle = inHl ? 'rgba(255,255,255,0.08)' : '#1f2c5f'; ctx.fill();
+          ctx.fillStyle = inHl ? 'rgba(255,255,255,0.12)' : '#4a3526'; ctx.fill();
         }
       }
     }
     // ghost of the piece where it would land
     if (target) {
       const p = S.tray[S.drag.slot];
-      for (const [dr, dc] of p.cells) drawBlock(bx + (target[1] + dc) * cs, by + (target[0] + dr) * cs, cs, p.color, 0.45);
+      for (const [dr, dc] of p.cells) drawBlock(bx + (target[1] + dc) * cs, by + (target[0] + dr) * cs, cs, COLORS[p.ci], 0.45);
     }
     // clearing cells
     for (const f of S.fx) {
       const k = clamp(f.t / 0.35, 0, 1), s = cs * (1 - easeOut(k) * 0.6);
-      drawBlock(f.x + (cs - s) / 2, f.y + (cs - s) / 2, s, f.color, 1 - k, f.gem);
+      drawBlock(f.x + (cs - s) / 2, f.y + (cs - s) / 2, s, COLORS[f.ci], 1 - k);
       if (k < 0.3) { ctx.fillStyle = `rgba(255,255,255,${alpha(0.6 * (1 - k / 0.3))})`; rr(f.x, f.y, cs, cs, cs * 0.15); ctx.fill(); }
     }
     // tray
@@ -314,24 +350,15 @@
       const ss = s * pop;
       const ox = sl.x + (sl.w - w * ss) / 2, oy = sl.y + (sl.h - h * ss) / 2;
       const ok = fitsAnywhere(p);
-      for (const [dr, dc] of p.cells) {
-        const g = p.gems && p.gems[`${dr},${dc}`];
-        drawBlock(ox + dc * ss, oy + dr * ss, ss, ok ? p.color : '#5a6390', ok ? 1 : 0.55, g);
-      }
+      for (const [dr, dc] of p.cells) drawBlock(ox + dc * ss, oy + dr * ss, ss, ok ? COLORS[p.ci] : '#6a6f60', ok ? 1 : 0.55, ok ? emblem(p.ci) : -1);
     }
     // dragged piece, lifted above the finger
     if (S.drag) {
       const p = S.tray[S.drag.slot], [w, h] = pieceSize(p);
       const x = S.drag.x - (w * cs) / 2, y = S.drag.y - cs * 1.3 - h * cs;
-      for (const [dr, dc] of p.cells) drawBlock(x + dc * cs, y + dr * cs, cs, p.color, 0.95, p.gems && p.gems[`${dr},${dc}`]);
+      for (const [dr, dc] of p.cells) drawBlock(x + dc * cs, y + dr * cs, cs, COLORS[p.ci], 0.95, emblem(p.ci));
     }
-    // particles
-    for (const q of S.parts) {
-      ctx.globalAlpha = clamp(q.life / q.max, 0, 1);
-      ctx.fillStyle = q.color;
-      ctx.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
-    }
-    ctx.globalAlpha = 1;
+    drawParticles();
     // popups
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (const p of S.pops) {
@@ -339,10 +366,48 @@
       const sc = k < 0.15 ? easeOut(k / 0.15) * 1.15 : 1.15 - Math.min(0.15, k - 0.15);
       ctx.globalAlpha = clamp(p.life / (p.max * 0.35), 0, 1);
       ctx.font = `900 ${p.size * sc}px Nunito, ui-rounded, system-ui, sans-serif`;
-      ctx.lineWidth = p.size * 0.16; ctx.strokeStyle = 'rgba(10,14,40,0.75)';
+      ctx.lineWidth = p.size * 0.16; ctx.strokeStyle = 'rgba(10,30,20,0.75)';
       ctx.strokeText(p.text, p.x, p.y); ctx.fillStyle = p.color; ctx.fillText(p.text, p.x, p.y);
     }
     ctx.globalAlpha = 1;
+  }
+  function drawParticles() {
+    for (const q of S.parts) {
+      ctx.globalAlpha = clamp(q.life / q.max, 0, 1);
+      ctx.fillStyle = q.color;
+      if (q.petal) { ctx.beginPath(); ctx.ellipse(q.x, q.y, q.s, q.s * 0.55, q.life * 6, 0, Math.PI * 2); ctx.fill(); }
+      else ctx.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
+    }
+    ctx.globalAlpha = 1;
+  }
+  // the live garden above the board
+  function drawStrip() {
+    const v = stripView();
+    ctx.save();
+    rr(v.x, v.y, v.w, v.h, 16); ctx.clip();
+    Garden.drawScene(ctx, v);
+    ctx.restore();
+    rr(v.x, v.y, v.w, v.h, 16);
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1.5; ctx.stroke();
+    // seed counter
+    const pulse = 1 + 0.25 * Math.max(0, 1 - (S.t - S.seedPulse) / 0.3);
+    ctx.font = `900 ${Math.round(15 * pulse)}px Nunito, ui-rounded, system-ui, sans-serif`;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const label = `🌱 ${save.seeds}`, tw = ctx.measureText(label).width;
+    rr(v.x + 8, v.y + 8, tw + 18, 26, 13); ctx.fillStyle = 'rgba(20,50,36,0.72)'; ctx.fill();
+    ctx.fillStyle = '#eaffdf'; ctx.fillText(label, v.x + 17, v.y + 21.5);
+    // combo with the moves left to keep it alive
+    if (S.streak >= 2) {
+      ctx.font = '900 16px Nunito, ui-rounded, system-ui, sans-serif';
+      const txt = `×${S.streak}`, w2 = ctx.measureText(txt).width + 44;
+      const x0 = v.x + v.w - 8 - w2;
+      rr(x0, v.y + 8, w2, 26, 13); ctx.fillStyle = 'rgba(20,50,36,0.72)'; ctx.fill();
+      ctx.fillStyle = '#ffe07a'; ctx.fillText(txt, x0 + 10, v.y + 21.5);
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath(); ctx.arc(x0 + w2 - 30 + i * 9, v.y + 21, 3, 0, Math.PI * 2);
+        ctx.fillStyle = i < 3 - S.miss ? '#ffe07a' : 'rgba(255,255,255,0.25)'; ctx.fill();
+      }
+    }
   }
 
   // ---------------------------------------------------------------- game flow
@@ -356,18 +421,14 @@
     });
     let r = Math.random() * total, i = 0;
     while ((r -= ws[i]) > 0) i++;
-    const piece = { cells: SHAPES[i].cells, color: COLORS[(Math.random() * COLORS.length) | 0], gems: null };
-    // in gem levels, some pieces carry a gem so the goal can always be finished
-    if (S.kind === 'adventure' && S.cfg.type === 'gems') {
-      const need = Object.entries(S.cfg.goal).filter(([k, n]) => (S.collected[k] || 0) + gemsOnBoard(k) < n + 1);
-      if (need.length && Math.random() < 0.5) {
-        const [dr, dc] = piece.cells[(Math.random() * piece.cells.length) | 0];
-        piece.gems = { [`${dr},${dc}`]: need[(Math.random() * need.length) | 0][0] };
-      }
+    let ci = (Math.random() * NC) | 0;
+    // in flower levels, lean toward the colors still needed so the goal can always be finished
+    if (S.kind === 'adventure' && S.cfg.type === 'flowers' && Math.random() < 0.3) {
+      const need = goalColors(S.cfg).filter(isGoalColor);
+      if (need.length) ci = need[(Math.random() * need.length) | 0];
     }
-    return piece;
+    return { cells: SHAPES[i].cells, ci };
   }
-  function gemsOnBoard(k) { let n = 0; for (const row of S.grid) for (const x of row) if (x && x.gem === k) n++; return n; }
   const difficulty = () => (S.kind === 'classic' ? clamp(S.score / 5000, 0, 1) : S.cfg.d);
 
   // how many of the pieces can be placed one after another (clearing lines as they fill), best order
@@ -405,18 +466,24 @@
   function refillTray() {
     const d = difficulty();
     // fair trays: all three pieces must fit one after another (difficulty comes from board, goals and piece mix)
-    const need = 3;
     let bestTray = null, bestScore = -1;
     for (let tries = 0; tries < 30; tries++) {
       const tray = [newPiece(d), newPiece(d), newPiece(d)];
       const ok = placeableInSequence(tray);
       if (ok > bestScore) { bestScore = ok; bestTray = tray; }
-      if (ok >= need) break;
+      if (ok >= 3) break;
     }
     S.tray = bestTray;
     S.trayAnim = S.t;
   }
 
+  function enterPlay() {
+    S.mode = 'play';
+    $('toasts').innerHTML = '';
+    showOnly('hud');
+    layout();
+    updateHud();
+  }
   function startLevel(n) {
     S.kind = 'adventure';
     S.cfg = levelConfig(n);
@@ -429,19 +496,55 @@
     S.cfg = { d: 0, type: 'classic', goal: {} };
     S.grid = Array.from({ length: N }, () => Array(N).fill(null));
     resetRun();
-    S.mode = 'play';
-    showOnly('hud');
-    updateHud();
+    enterPlay();
   }
   function resetRun() {
-    Object.assign(S, { score: 0, streak: 0, pieces: 0, collected: {}, lines: 0, drag: null, busy: false });
+    Object.assign(S, { score: 0, streak: 0, miss: 0, pieces: 0, collected: {}, lines: 0, runSeeds: 0, drag: null, busy: false, run: newRun() });
     S.fx.length = 0; S.parts.length = 0; S.pops.length = 0;
     refillTray();
   }
 
+  function addSeeds(n) {
+    if (n <= 0) return;
+    save.seeds += n;
+    S.runSeeds += n;
+    S.seedPulse = S.t;
+  }
+
+  // the garden strip reacts to clears and combos
+  function bloom(colors, streak, lines) {
+    const run = S.run, v = stripView();
+    const add = (ci) => {
+      run.flowers.push({ u: rand(0.03, 0.97), z: rand(0.08, 0.95), ci, born: S.t + rand(0, 0.25), die: 0 });
+      const alive = run.flowers.filter((f) => !f.die);
+      if (alive.length > 70) alive[0].die = S.t;
+    };
+    colors.forEach(add);
+    let msg = null;
+    if (streak >= 3) { for (let i = 0; i < Math.min(streak * 2, 16); i++) add(colors[i % colors.length]); if (streak === 3) msg = t('bloomWave'); }
+    if (streak >= 5 && streak % 5 === 0 && run.trees.length < 4) {
+      run.trees.push({ u: rand(0.08, 0.92), z: rand(0.1, 0.5), st: (Math.random() * 3) | 0, born: S.t });
+      run.trees.sort((a, b) => a.z - b.z);
+      msg = t('treeGrows');
+    }
+    if (streak >= 8 && (streak === 8 || streak % 4 === 0)) {
+      run.rainbow = S.t;
+      for (let i = 0; i < 3 && run.flies.length < 8; i++) run.flies.push({ ph: rand(0, 6.28), born: S.t });
+      msg = t('rainbow');
+    }
+    if (lines >= 3) run.burst = S.t;
+    run.flowers.sort((a, b) => a.z - b.z);
+    run.flowers = run.flowers.filter((f) => !f.die || S.t - f.die < 0.7);
+    // petals drift down from the strip
+    if (streak >= 3 || lines >= 2) {
+      for (let i = 0; i < 10 + streak * 2; i++) S.parts.push({ x: rand(v.x, v.x + v.w), y: v.y + v.h * rand(0.2, 0.8), vx: rand(-60, 60), vy: rand(-120, 10), s: rand(3, 6), color: COLORS[colors[i % colors.length]], life: 1.2, max: 1.2, petal: true });
+    }
+    if (msg) { pop(msg, W / 2, v.y + v.h * 0.45, '#ffffff', 22); Sound.bloom(); }
+  }
+
   function place(slot, r, c) {
     const p = S.tray[slot];
-    for (const [dr, dc] of p.cells) S.grid[r + dr][c + dc] = { color: p.color, gem: (p.gems && p.gems[`${dr},${dc}`]) || null };
+    for (const [dr, dc] of p.cells) S.grid[r + dr][c + dc] = { ci: p.ci };
     S.tray[slot] = null;
     S.pieces++;
     S.score += p.cells.length;
@@ -456,48 +559,62 @@
     const lines = rows.length + cols.length;
     if (lines) {
       S.streak++;
+      S.miss = 0;
       const cleared = new Set();
       rows.forEach((rr2) => { for (let j = 0; j < N; j++) cleared.add(rr2 * N + j); });
       cols.forEach((cc) => { for (let j = 0; j < N; j++) cleared.add(j * N + cc); });
-      let gemHit = false;
+      const colors = [];
+      let i = 0;
       for (const k of cleared) {
         const rr2 = (k / N) | 0, cc = k % N, cell = S.grid[rr2][cc];
         const x = bx + cc * cs, y = by + rr2 * cs;
-        S.fx.push({ x, y, color: cell.color, gem: cell.gem, t: 0 });
-        for (let i = 0; i < 4; i++) S.parts.push({ x: x + cs / 2, y: y + cs / 2, vx: rand(-160, 160), vy: rand(-260, -40), s: rand(3, 7), color: cell.color, life: 0.7, max: 0.7 });
-        if (cell.gem) { S.collected[cell.gem] = (S.collected[cell.gem] || 0) + 1; gemHit = true; }
+        S.fx.push({ x, y, ci: cell.ci, t: 0 });
+        for (let j = 0; j < 3; j++) S.parts.push({ x: x + cs / 2, y: y + cs / 2, vx: rand(-160, 160), vy: rand(-260, -40), s: rand(3, 7), color: COLORS[cell.ci], life: 0.7, max: 0.7 });
+        S.collected[cell.ci] = (S.collected[cell.ci] || 0) + 1;
+        if (i++ % 4 === 0) colors.push(cell.ci);
         S.grid[rr2][cc] = null;
       }
       S.lines += lines;
-      const gain = Math.round(10 * lines * (lines + 1) * (1 + (S.streak - 1) * 0.5));
+      const gain = Math.round(10 * lines * (lines + 1) * (1 + (S.streak - 1) * 0.3));
       S.score += gain;
+      const seeds = lines + Math.min(S.streak - 1, 6);
+      addSeeds(seeds);
       Sound.clear(lines, S.streak);
-      if (gemHit) setTimeout(() => Sound.gem(), 120);
+      setTimeout(() => Sound.seed(), 160);
       vibrate(lines > 1 ? [20, 30, 20] : 15);
       const cy = by + (rows.length ? (rows[0] + 0.5) * cs : cs * N * 0.5);
       const word = lines >= 5 ? 'amazing' : lines === 4 ? 'excellent' : lines === 3 ? 'great' : lines === 2 ? 'nice' : null;
       if (word) pop(t(word), W / 2, cy - 24, '#ffe07a', 34);
       pop(`+${gain}`, W / 2, cy + 12, '#ffffff', 24);
-      if (S.streak >= 2) pop(t('combo', { n: S.streak }), W / 2, by - 4, '#8fd3ff', 22);
-    } else {
-      S.streak = 0;
+      pop(`+${seeds} 🌱`, 60, stripY + stripH + 4, '#c8ffb8', 18);
+      if (S.streak >= 2) pop(t('combo', { n: S.streak }), W / 2, by - 4, '#ffe07a', 22);
+      bloom(colors, S.streak, lines);
+    } else if (S.streak) {
+      // a combo survives two placements without a clear; the third breaks it
+      S.miss++;
+      if (S.miss >= 3) { S.streak = 0; S.miss = 0; }
     }
     if (S.tray.every((x) => !x)) refillTray();
     updateHud();
+    persist();
 
     if (S.kind === 'adventure' && goalMet()) return finish(true);
     if (!S.tray.some((x) => x && fitsAnywhere(x))) finish(false);
+    return undefined;
   }
 
-  function pop(text, x, y, color, size) { S.pops.push({ text, x, y, color, size, life: 1.1, max: 1.1 }); }
+  function pop(text, x, y, color, size) { S.pops.push({ text, x, y, color, size, life: 1.2, max: 1.2 }); }
 
   function goalMet() {
     const g = S.cfg.goal;
-    if (S.cfg.type === 'gems') return Object.entries(g).every(([k, n]) => (S.collected[k] || 0) >= n);
+    if (S.cfg.type === 'flowers') return Object.entries(g).every(([k, n]) => (S.collected[k] || 0) >= n);
     if (S.cfg.type === 'score') return S.score >= g.score;
     return S.lines >= g.lines;
   }
   function starsFor() { const par = S.cfg.par; return S.pieces <= par ? 3 : S.pieces <= par * 1.35 ? 2 : 1; }
+
+  const nextStep = () => save.garden.findIndex((v) => v < 0);
+  const canBuild = () => { const s = nextStep(); return s >= 0 && save.seeds >= TASKS[s].cost; };
 
   function finish(won) {
     S.mode = 'over';
@@ -507,6 +624,8 @@
     let stars = 0, best = false;
     if (S.kind === 'adventure' && won) {
       stars = starsFor();
+      const first = !save.stars[n];
+      addSeeds(first ? 8 + stars * 4 : 2 + stars);
       save.stars[n] = Math.max(save.stars[n] || 0, stars);
       if (save.level === n) save.level = n + 1;
     }
@@ -516,33 +635,45 @@
       if (won) Sound.win(); else Sound.fail();
       $('resStars').innerHTML = S.kind === 'adventure' && won ? [1, 2, 3].map((i) => `<span class="${i <= stars ? '' : 'off'}">★</span>`).join('') : '';
       $('resScore').textContent = S.score;
+      $('resSeeds').textContent = S.runSeeds ? t('seedsEarned', { n: S.runSeeds }) : '';
+      const step = nextStep();
+      $('resBuild').classList.toggle('hidden', !canBuild());
+      if (step >= 0) $('resBuild').textContent = t('buildNow', { task: t('task_' + TASKS[step].id) });
       if (S.kind === 'adventure') {
         $('resTitle').textContent = won ? t('levelComplete') : t('outOfSpace');
-        $('resSub').textContent = won ? t('piecesUsed', { n: S.pieces }) : t('outOfSpaceSub');
+        $('resSub').textContent = won ? '' : t('outOfSpaceSub');
         $('resPrimary').textContent = won ? t('next') : t('retry');
-        $('resSecondary').textContent = t('map');
         $('resPrimary').onclick = () => (won ? startLevel(n + 1) : startLevel(n));
-        $('resSecondary').onclick = openMap;
       } else {
         $('resTitle').textContent = best ? t('newBest') : t('gameOver');
         $('resSub').textContent = t('best', { n: save.best });
         $('resPrimary').textContent = t('retry');
-        $('resSecondary').textContent = t('home');
         $('resPrimary').onclick = startClassic;
-        $('resSecondary').onclick = openHome;
       }
+      $('resSub').classList.toggle('hidden', !$('resSub').textContent);
+      $('resSecondary').textContent = t('garden');
+      $('resSecondary').onclick = openHome;
       $('result').classList.remove('hidden');
     }, won ? 700 : 900);
   }
 
   // ---------------------------------------------------------------- HUD
-  const gemSvg = (c) => `<svg viewBox="0 0 20 20"><path d="M10 1.5 18.5 7.5 10 18.5 1.5 7.5Z" fill="${c}" stroke="#fff" stroke-opacity=".85" stroke-width="1.4"/><path d="M1.5 7.5h17M10 1.5 6.8 7.5 10 18.5 13.2 7.5Z" fill="none" stroke="#fff" stroke-opacity=".4"/></svg>`;
+  const iconCache = {};
+  function flowerIcon(ci) {
+    if (!iconCache[ci]) {
+      const c = document.createElement('canvas');
+      c.width = c.height = 64;
+      Garden.drawHead(c.getContext('2d'), 32, 32, 24, ci);
+      iconCache[ci] = c.toDataURL();
+    }
+    return iconCache[ci];
+  }
   function goalChips(big) {
     const g = S.cfg.goal;
-    if (S.cfg.type === 'gems') {
+    if (S.cfg.type === 'flowers') {
       return Object.entries(g).map(([k, n]) => {
         const left = Math.max(0, n - (big ? 0 : S.collected[k] || 0));
-        return `<div class="goal${left ? '' : ' done'}">${gemSvg(GEMS[k])}<span>${left || '✓'}</span></div>`;
+        return `<div class="goal${left ? '' : ' done'}"><img src="${flowerIcon(+k)}" alt="${tl('flowers', +k)}"><span>${left || '✓'}</span></div>`;
       }).join('');
     }
     if (S.cfg.type === 'score') return `<div class="goal${S.score >= g.score && !big ? ' done' : ''}"><span>${big ? g.score : `${Math.min(S.score, g.score)}/${g.score}`}</span></div>`;
@@ -554,27 +685,112 @@
     $('goals').innerHTML = S.kind === 'adventure' ? goalChips(false) : '';
   }
   function showIntro() {
-    S.mode = 'play';
+    enterPlay();
     S.busy = true;
-    showOnly('hud');
-    updateHud();
     const c = S.cfg;
     $('introLevel').textContent = t('levelN', { n: c.n });
-    $('introGoal').textContent = c.type === 'gems' ? t('goalGems') : c.type === 'score' ? t('goalScore', { n: c.goal.score }) : t('goalLines', { n: c.goal.lines });
+    $('introGoal').textContent = c.type === 'flowers' ? t('goalFlowers') : c.type === 'score' ? t('goalScore', { n: c.goal.score }) : t('goalLines', { n: c.goal.lines });
     $('introGoals').innerHTML = goalChips(true);
+    $('introSub').textContent = c.type === 'flowers' ? t('goalFlowersSub') : '';
+    $('introSub').classList.toggle('hidden', c.type !== 'flowers');
     $('introHard').classList.toggle('hidden', !c.hard);
     $('intro').classList.remove('hidden');
   }
 
   // ---------------------------------------------------------------- screens
-  const LAYERS = ['home', 'map', 'hud', 'intro', 'result', 'settings'];
+  const LAYERS = ['home', 'map', 'hud', 'intro', 'result', 'settings', 'build'];
   function showOnly(id) { LAYERS.forEach((l) => $(l).classList.toggle('hidden', l !== id)); }
   function openHome() {
     S.mode = 'home';
+    S.parts.length = 0;
     showOnly('home');
-    $('advSub').textContent = t('levelN', { n: save.level });
-    $('classicSub').textContent = t('best', { n: save.best });
+    refreshHome();
   }
+  function refreshHome() {
+    $('homeSeeds').textContent = save.seeds;
+    $('playLbl').textContent = t('levelN', { n: save.level });
+    $('classicSub').textContent = t('best', { n: save.best });
+    $('levelsSub').textContent = `★ ${Object.values(save.stars).reduce((a, b) => a + b, 0)}`;
+    const step = nextStep(), done = TASKS.length - (step < 0 ? 0 : TASKS.filter((_, i) => save.garden[i] < 0).length);
+    $('chapterLbl').textContent = t('chapter', { a: done, b: TASKS.length });
+    $('welcome').classList.toggle('hidden', done > 0 || save.level > 2);
+    const btn = $('buildBtn');
+    if (step < 0) {
+      $('taskName').textContent = t('gardenDone');
+      $('taskFill').style.width = '100%';
+      btn.classList.add('hidden');
+      $('chapterLbl').textContent = t('comingSoon');
+      measurePanel();
+      return;
+    }
+    const cost = TASKS[step].cost;
+    $('taskName').textContent = t('task_' + TASKS[step].id);
+    $('taskFill').style.width = `${Math.min(100, (save.seeds / cost) * 100)}%`;
+    btn.classList.remove('hidden');
+    btn.textContent = `${Math.min(save.seeds, cost)}/${cost} 🌱`;
+    btn.classList.toggle('ready', save.seeds >= cost);
+    if (save.seeds >= cost) btn.textContent = t('build');
+    measurePanel();
+  }
+
+  let buildSel = 0;
+  function openBuild() {
+    const step = nextStep();
+    if (step < 0) return;
+    const task = TASKS[step];
+    buildSel = 0;
+    $('buildChapter').textContent = t('chapter', { a: step, b: TASKS.length });
+    $('buildTitle').textContent = t('task_' + task.id);
+    const box = $('buildOpts');
+    box.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+      const b = document.createElement('button');
+      b.className = 'opt' + (i === buildSel ? ' sel' : '');
+      const c = document.createElement('canvas');
+      const cw = 100, ch = 75, dpr = Math.min(window.devicePixelRatio || 1, 2);
+      c.width = cw * dpr; c.height = ch * dpr;
+      const g = c.getContext('2d');
+      g.scale(dpr, dpr);
+      Garden.preview(g, cw, ch, step, i, 1.2);
+      b.appendChild(c);
+      const lbl = document.createElement('span');
+      lbl.textContent = tl('style_' + task.id, i);
+      b.appendChild(lbl);
+      b.addEventListener('click', () => {
+        buildSel = i;
+        box.querySelectorAll('.opt').forEach((o, j) => o.classList.toggle('sel', j === i));
+      });
+      box.appendChild(b);
+    }
+    const ok = save.seeds >= task.cost;
+    $('buildGo').textContent = t('buildFor', { n: task.cost });
+    $('buildGo').disabled = !ok;
+    $('buildNeed').textContent = ok ? '' : t('needMore', { n: task.cost - save.seeds });
+    $('buildNeed').classList.toggle('hidden', ok);
+    $('build').classList.remove('hidden');
+  }
+  function doBuild() {
+    const step = nextStep();
+    if (step < 0 || save.seeds < TASKS[step].cost) return;
+    save.seeds -= TASKS[step].cost;
+    save.garden[step] = buildSel;
+    persist();
+    $('build').classList.add('hidden');
+    S.appear = { task: step, start: S.t + 0.15 };
+    Sound.init();
+    Sound.build();
+    vibrate([15, 40, 25]);
+    // sparkles where the new piece appears
+    const a = Garden.anchor(homeView(), step);
+    for (let i = 0; i < 36; i++) {
+      const ang = rand(0, Math.PI * 2), sp = rand(60, 260);
+      S.parts.push({ x: a.x, y: a.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 120, s: rand(3, 7), color: i % 3 ? COLORS[i % NC] : '#ffffff', life: 1.3, max: 1.3, petal: true });
+    }
+    toast(t('built', { task: t('task_' + TASKS[step].id) }));
+    if (nextStep() < 0) setTimeout(() => toast(t('gardenDone')), 1200);
+    refreshHome();
+  }
+
   function openMap() {
     S.mode = 'map';
     showOnly('map');
@@ -635,10 +851,15 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', (e) => { if (S.drag && e.pointerId === S.drag.id) S.drag = null; });
 
-  $('advBtn').addEventListener('click', () => { Sound.init(); openMap(); });
+  $('playBtn').addEventListener('click', () => { Sound.init(); startLevel(save.level); });
   $('classicBtn').addEventListener('click', () => { Sound.init(); startClassic(); });
+  $('levelsBtn').addEventListener('click', () => { Sound.init(); openMap(); });
+  $('buildBtn').addEventListener('click', () => { Sound.init(); openBuild(); });
+  $('buildGo').addEventListener('click', doBuild);
+  $('buildClose').addEventListener('click', () => $('build').classList.add('hidden'));
+  $('resBuild').addEventListener('click', () => { openHome(); openBuild(); });
   $('mapBack').addEventListener('click', openHome);
-  $('hudBack').addEventListener('click', () => (S.kind === 'adventure' ? openMap() : openHome()));
+  $('hudBack').addEventListener('click', openHome);
   $('introStart').addEventListener('click', () => { $('intro').classList.add('hidden'); S.busy = false; Sound.init(); });
   $('settingsBtn').addEventListener('click', () => {
     $('setSound').checked = save.settings.sound;
@@ -657,13 +878,14 @@
     requestAnimationFrame(frame);
     const dt = Math.min(1 / 30, Math.max(0, (now - last) / 1000));
     last = now;
-    if (innerWidth !== W || innerHeight !== H) layout();
+    if (innerWidth !== W || innerHeight !== H) { layout(); if (S.mode === 'home') measurePanel(); }
     if (!W || !H) return;
     S.t += dt;
     for (let i = S.fx.length - 1; i >= 0; i--) { S.fx[i].t += dt; if (S.fx[i].t > 0.35) S.fx.splice(i, 1); }
     for (let i = S.parts.length - 1; i >= 0; i--) {
       const q = S.parts[i];
-      q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 700 * dt;
+      q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += (q.petal ? 180 : 700) * dt;
+      if (q.petal) q.vx *= 0.98;
       if (q.life <= 0) S.parts.splice(i, 1);
     }
     for (let i = S.pops.length - 1; i >= 0; i--) { const p = S.pops[i]; p.life -= dt; p.y -= 30 * dt; if (p.life <= 0) S.pops.splice(i, 1); }
@@ -677,5 +899,5 @@
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
-  window.__bj = { S, save, startLevel, startClassic, place, fits, levelConfig, buildBoard, fitsAnywhere, geom: () => ({ cs, bx, by, slots }), pieceSize };
+  window.__bb = { S, save, startLevel, startClassic, place, fits, levelConfig, buildBoard, fitsAnywhere, geom: () => ({ cs, bx, by, slots }), pieceSize, openHome, openBuild, doBuild, persist };
 })();

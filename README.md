@@ -13,7 +13,7 @@ Tasarım detayları: [`docs/TASARIM.md`](docs/TASARIM.md)
 
 > Bu repoda ikinci bir oyun daha var: **[Drift Garden](balon-bahcesi/)** (Balon Bahçesi). Yetişkinler için sakin, odak dostu bir müzik ve balon oyunu. Tasarımı [`balon-bahcesi/TASARIM.md`](balon-bahcesi/TASARIM.md) dosyasında.
 >
-> Üçüncü oyun: **[Block Journey](blok/)** (Blok Yolculuğu). Block Blast tarzı, sınırsız seviyeli bir blok bulmacası. Tasarımı [`blok/TASARIM.md`](blok/TASARIM.md) dosyasında.
+> Üçüncü oyun: **[Bloom Blast](bloom-blast/)**. Block Blast tarzı, sınırsız seviyeli bir blok bulmacası. Temizlediğin her satır tohum kazandırıyor, tohumlarla bahçeni inşa ediyorsun. Tasarımı [`bloom-blast/TASARIM.md`](bloom-blast/TASARIM.md) dosyasında.
 
 ## Çalıştırma
 Kurulum gerekmez, saf HTML/JS'dir. Service worker için bir sunucu üzerinden aç:
