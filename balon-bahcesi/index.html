@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#cfe9ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Balon Bahçesi">
+<meta name="description" content="Balonları patlat, şarkıyı sen çal, bahçeni büyüt. Sakin ve odak dostu bir oyun.">
+<title>Balon Bahçesi</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<!-- BAHÇE (ana ekran) -->
+<section id="home" class="layer">
+  <header class="top">
+    <h1 class="brand">Balon Bahçesi</h1>
+    <div class="top-right">
+      <div class="pill star">⭐ <span id="stars">0</span></div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Ayarlar">⚙️</button>
+    </div>
+  </header>
+  <div class="home-bottom">
+    <div class="next-card">
+      <div class="next-label">Sıradaki şarkı</div>
+      <div class="next-title" id="nextTitle"></div>
+      <button class="btn play" id="playBtn">♪ Çal</button>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn" id="songsBtn"><span>🎼</span>Şarkılar</button>
+      <button class="nav-btn" id="balloonsBtn"><span>🎈</span>Balonlar</button>
+      <button class="nav-btn" id="gardenBtn"><span>🌷</span>Bahçe</button>
+    </nav>
+  </div>
+</section>
+
+<!-- ŞARKI ÇALARKEN -->
+<section id="playUi" class="layer hidden">
+  <header class="play-top">
+    <button class="icon-btn" id="quitBtn" aria-label="Bahçeye dön">✕</button>
+    <div class="song-info">
+      <div class="song-name" id="songName"></div>
+      <div class="progress"><div id="progressFill"></div></div>
+    </div>
+  </header>
+  <div class="hint hidden" id="hint">Balonlara dokun,<br>şarkıyı sen çal 🎵</div>
+</section>
+
+<!-- ŞARKI BİTTİ -->
+<section id="done" class="layer modal hidden">
+  <div class="card">
+    <div class="done-emoji">🎼</div>
+    <h2>Şarkı tamamlandı</h2>
+    <p class="done-song" id="doneSong"></p>
+    <div class="rewards">
+      <div><b id="doneStars">+8</b><span>yıldız</span></div>
+      <div><b id="doneFlower">🌷</b><span id="doneFlowerText">bahçende açtı</span></div>
+    </div>
+    <p class="break-note hidden" id="breakNote"></p>
+    <button class="btn play" id="againBtn">♪ Bir şarkı daha</button>
+    <button class="btn soft" id="homeBtn">🌷 Bahçeye dön</button>
+  </div>
+</section>
+
+<!-- ŞARKILAR -->
+<section id="songs" class="sheet hidden">
+  <div class="sheet-panel">
+    <div class="sheet-head">
+      <h2>Şarkılar</h2>
+      <div class="pill star">⭐ <span class="starCount">0</span></div>
+      <button class="close" data-close aria-label="Kapat">✕</button>
+    </div>
+    <ul class="list" id="songList"></ul>
+  </div>
+</section>
+
+<!-- BALONLAR -->
+<section id="balloons" class="sheet hidden">
+  <div class="sheet-panel">
+    <div class="sheet-head">
+      <h2>Balonlar</h2>
+      <div class="pill star">⭐ <span class="starCount">0</span></div>
+      <button class="close" data-close aria-label="Kapat">✕</button>
+    </div>
+    <p class="sheet-note">Her balon başka bir enstrüman çalar. Dinlemek için karta dokun.</p>
+    <div class="grid" id="balloonGrid"></div>
+  </div>
+</section>
+
+<!-- BAHÇE DÜKKANI -->
+<section id="garden" class="sheet hidden">
+  <div class="sheet-panel">
+    <div class="sheet-head">
+      <h2>Bahçe</h2>
+      <div class="pill star">⭐ <span class="starCount">0</span></div>
+      <button class="close" data-close aria-label="Kapat">✕</button>
+    </div>
+    <p class="sheet-note">Her tamamladığın şarkıda bahçende bir çiçek açar. Yıldızlarınla bahçeni süsle, bazı süsler bahçeye kendi sesini de katar.</p>
+    <ul class="list" id="decorList"></ul>
+  </div>
+</section>
+
+<!-- AYARLAR -->
+<section id="settings" class="sheet hidden">
+  <div class="sheet-panel">
+    <div class="sheet-head">
+      <h2>Ayarlar</h2>
+      <button class="close" data-close aria-label="Kapat">✕</button>
+    </div>
+    <div class="settings">
+      <label class="set-row">
+        <span>Müzik sesi</span>
+        <input type="range" id="setVol" min="0" max="100" step="5">
+      </label>
+      <label class="set-row">
+        <span>Bahçe sesleri<small>Su, kuş ve çan sesleri</small></span>
+        <input type="checkbox" id="setAmb" class="switch">
+      </label>
+      <label class="set-row">
+        <span>Titreşim</span>
+        <input type="checkbox" id="setVibe" class="switch">
+      </label>
+      <label class="set-row">
+        <span>Sakin hareket<small>Daha yavaş balonlar, daha az efekt</small></span>
+        <input type="checkbox" id="setCalm" class="switch">
+      </label>
+      <label class="set-row">
+        <span>Mola hatırlatıcısı<small>Belli bir süre sonra nazikçe hatırlatır</small></span>
+        <select id="setBreak">
+          <option value="0">Kapalı</option>
+          <option value="10">10 dk</option>
+          <option value="15">15 dk</option>
+          <option value="20">20 dk</option>
+          <option value="30">30 dk</option>
+        </select>
+      </label>
+    </div>
+    <p class="muted">Balon Bahçesi rahatlaman için tasarlandı. Bir tedavi aracı değildir.</p>
+  </div>
+</section>
+
+<div id="toasts"></div>
+
+<script src="songs.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

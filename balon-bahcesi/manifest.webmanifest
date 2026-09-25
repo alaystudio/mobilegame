@@ -1,0 +1,18 @@
+{
+  "name": "Balon Bahçesi",
+  "short_name": "Balon Bahçesi",
+  "description": "Balonları patlat, şarkıyı sen çal, bahçeni büyüt. Sakin ve odak dostu bir oyun.",
+  "lang": "tr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#cfe9ff",
+  "theme_color": "#cfe9ff",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

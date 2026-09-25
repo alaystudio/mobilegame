@@ -11,6 +11,8 @@ Ekrana dokununca iç ve dış yörünge arasında zıplar. Engellerden kaç, yı
 
 Tasarım detayları: [`docs/TASARIM.md`](docs/TASARIM.md)
 
+> Bu repoda ikinci bir oyun daha var: **[Balon Bahçesi](balon-bahcesi/)**. Sakin, odak dostu bir müzik ve balon oyunu. Tasarımı [`balon-bahcesi/TASARIM.md`](balon-bahcesi/TASARIM.md) dosyasında.
+
 ## Çalıştırma
 Kurulum gerekmez, saf HTML/JS'dir. Service worker için bir sunucu üzerinden aç:
 
