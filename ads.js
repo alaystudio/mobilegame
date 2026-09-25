@@ -38,7 +38,7 @@
       },
       // true iken eklenti gerçek birimler yerine Google'ın test reklamlarını gösterir.
       // Cihaz testleri bitince, mağazaya göndermeden hemen önce false yap.
-      testing: true,
+      testing: false,
     },
   };
 
