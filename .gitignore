@@ -14,3 +14,4 @@ ios/App/Pods/
 ios/App/output/
 ios/DerivedData/
 xcuserdata/
+android/keystore.properties
