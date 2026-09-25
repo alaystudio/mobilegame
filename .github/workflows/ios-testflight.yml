@@ -1,4 +1,6 @@
 # iOS derleyip TestFlight'a yükler. Mac gerekmez: GitHub'ın macOS makinesinde çalışır.
+# Arşiv imzasız alınır; dışa aktarma adımı App Store dağıtım sertifikası ve profilini
+# otomatik oluşturup imzalar. Böylece hesapta kayıtlı cihaz gerekmez.
 # Tetikleme: `ios-v*` etiketi push etmek (ör. git tag ios-v1.0.1 && git push origin ios-v1.0.1).
 # Gerekli repo secret'ları (Settings → Secrets and variables → Actions):
 #   APPLE_TEAM_ID   : Apple Developer takım kimliği (10 karakter)
@@ -43,7 +45,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/keys"
           printf '%s' "${{ secrets.ASC_KEY_P8 }}" > "$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8"
 
-      - name: Arşivle (otomatik imzalama)
+      - name: Arşivle (imzasız; imza dışa aktarırken dağıtım profiliyle atılır)
         run: |
           set -o pipefail
           xcodebuild archive \
@@ -52,12 +54,8 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8" \
-            -authenticationKeyID "$KEY_ID" \
-            -authenticationKeyIssuerID "$ISSUER" \
             DEVELOPMENT_TEAM="$TEAM" \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGNING_ALLOWED=NO \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} 2>&1 | tee "$RUNNER_TEMP/archive.log"
 
       - name: Dışa aktar ve App Store Connect'e yükle
