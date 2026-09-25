@@ -459,3 +459,19 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* shown only if drawing fails, so the problem can be reported */
+.err {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + var(--sab));
+  z-index: 30;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(120, 30, 40, 0.9);
+  color: #fff;
+  font: 12px/1.4 ui-monospace, Menlo, monospace;
+  user-select: text;
+  -webkit-user-select: text;
+}

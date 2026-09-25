@@ -22,7 +22,8 @@
     };
   }
   const hexRgb = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
-  const rgba = (h, a) => { const [r, g, b] = hexRgb(h); return `rgba(${r},${g},${b},${a})`; };
+  const alpha = (a) => (a > 0 ? (a < 1 ? a : 1) : 0).toFixed(3);
+  const rgba = (h, a) => { const [r, g, b] = hexRgb(h); return `rgba(${r},${g},${b},${alpha(a)})`; };
   const mix = (a, b, t) => { const x = hexRgb(a), y = hexRgb(b); return `rgb(${x.map((v, i) => Math.round(lerp(v, y[i], t))).join(',')})`; };
 
   // ---------------------------------------------------------------- save
@@ -314,6 +315,8 @@
     if (!panelTop) panelTop = H * 0.72;
   }
   const homeGround = () => clamp(panelTop - 150 * U, H * 0.36, H * 0.58);
+  // horizon as a fraction of the screen height; safe when the page has no size yet
+  const homeGroundF = () => (H > 0 ? homeGround() / H : 0.56);
   const inOrder = () => save.settings.mode !== 'any';
   const tempo = () => clamp(Number(save.settings.tempo) || 1, 0.5, 1.8);
 
@@ -482,7 +485,8 @@
   // ---------------------------------------------------------------- update
   function update(dt) {
     S.t += dt;
-    S.groundF += ((S.mode === 'home' ? homeGround() / H : 0.88) - S.groundF) * Math.min(1, dt * 2.5);
+    if (!Number.isFinite(S.groundF)) S.groundF = 0.56;
+    S.groundF += ((S.mode === 'home' ? homeGroundF() : 0.88) - S.groundF) * Math.min(1, dt * 2.5);
 
     if (S.mode === 'play') {
       S.spawnT -= dt;
@@ -538,6 +542,7 @@
 
   // ---------------------------------------------------------------- drawing
   function glow(c, x, y, r, color, a) {
+    if (!(r > 0.1) || !Number.isFinite(x) || !Number.isFinite(y)) return;
     const g = c.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, rgba(color, a));
     g.addColorStop(1, rgba(color, 0));
@@ -765,7 +770,7 @@
       for (let i = 0; i < 6; i++) {
         const p = ((T * 0.08 + i / 6) % 1);
         const x = lerp(W * 0.5, W, p), y = lerp(gy + band * 0.75, gy + band * 0.25, p);
-        ctx.fillStyle = `rgba(244,234,210,${0.35 * Math.sin(p * Math.PI)})`;
+        ctx.fillStyle = `rgba(244,234,210,${alpha(0.35 * Math.sin(p * Math.PI))})`;
         ctx.fillRect(x, y, 8 * U, 1.5);
       }
     }
@@ -776,7 +781,7 @@
       ctx.fillStyle = '#232c55';
       ctx.beginPath(); ctx.ellipse(px, py, W * 0.15, 14 * U * sc, 0, 0, TAU); ctx.fill();
       for (let i = 0; i < 4; i++) {
-        ctx.fillStyle = `rgba(244,234,210,${0.25 + 0.2 * Math.sin(T * 2 + i)})`;
+        ctx.fillStyle = `rgba(244,234,210,${alpha(0.25 + 0.2 * Math.sin(T * 2 + i))})`;
         ctx.fillRect(px - (10 - i * 2) * U, py - 6 * U + i * 3.5 * U, (20 - i * 4) * U, 1.5);
       }
     }
@@ -815,7 +820,7 @@
         const y = gy - 40 * U + f.y * (band * 0.8) * (inPlay ? 0.4 : 1) + Math.sin(T * f.sp + f.ph) * 10 * U;
         const a = 0.4 + 0.6 * Math.max(0, Math.sin(T * 1.4 * f.sp + f.ph));
         glow(ctx, x, y, 9 * U, '#e8f5a0', 0.35 * a);
-        ctx.fillStyle = `rgba(245,250,200,${a})`;
+        ctx.fillStyle = `rgba(245,250,200,${alpha(a)})`;
         ctx.beginPath(); ctx.arc(x, y, 1.4 * U, 0, TAU); ctx.fill();
       }
     }
@@ -829,7 +834,7 @@
       const wx = b.wob ? Math.sin(S.t * 50) * 4 * U * (b.wob / 0.4) : 0;
       if ((guide || S.idx === 0) && b.n === S.idx && S.mode === 'play') {
         const p = 0.5 + 0.5 * Math.sin(S.t * 3) + (S.idx === 0 ? 0.5 : 0);
-        ctx.strokeStyle = `rgba(244,234,210,${0.25 + 0.3 * p + (b.pulse || 0) * 0.4})`;
+        ctx.strokeStyle = `rgba(244,234,210,${alpha(0.25 + 0.3 * p + (b.pulse || 0) * 0.4)})`;
         ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(b.x + wx, b.y, b.r * (1.3 + 0.06 * p + (b.pulse || 0) * 0.3), 0, TAU); ctx.stroke();
       }
@@ -845,24 +850,39 @@
     for (const p of S.parts) {
       const a = Math.max(0, p.life / p.max);
       glow(ctx, p.x, p.y, p.r * 4, p.color, 0.3 * a);
-      ctx.fillStyle = `rgba(255,248,232,${a})`;
+      ctx.fillStyle = `rgba(255,248,232,${alpha(a)})`;
       ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill();
     }
     for (const m of S.motes) {
       const a = Math.min(1, m.life) * 0.9;
       glow(ctx, m.x, m.y, m.r * 5, m.color, 0.3 * a);
-      ctx.fillStyle = `rgba(255,248,232,${a})`;
+      ctx.fillStyle = `rgba(255,248,232,${alpha(a)})`;
       ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, TAU); ctx.fill();
     }
   }
 
   let last = performance.now();
+  let lastError = '';
   function frame(now) {
-    const dt = Math.min(1 / 30, (now - last) / 1000);
-    last = now;
-    update(dt);
-    render();
     requestAnimationFrame(frame);
+    const dt = Math.min(1 / 30, Math.max(0, (now - last) / 1000));
+    last = now;
+    // the page can start before it has a size (e.g. inside a panel); pick up the real size when it arrives
+    if (innerWidth !== W || innerHeight !== H || !canvas.width) { resize(); measurePanel(); }
+    if (!W || !H) return;
+    try {
+      update(dt);
+      render();
+    } catch (err) {
+      const msg = String((err && err.message) || err);
+      if (msg !== lastError) {
+        lastError = msg;
+        console.error(err);
+        const box = $('errBox');
+        box.textContent = 'Render error: ' + msg;
+        box.classList.remove('hidden');
+      }
+    }
   }
 
   // ---------------------------------------------------------------- input
@@ -1049,7 +1069,7 @@
   resize();
   updateHome();
   measurePanel();
-  S.groundF = homeGround() / H;
+  S.groundF = homeGroundF();
   window.addEventListener('resize', measurePanel);
   requestAnimationFrame(frame);
 
