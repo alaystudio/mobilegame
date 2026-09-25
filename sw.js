@@ -1,9 +1,10 @@
 // Önbellek sürümünü her yayında artır ki oyuncular yeni sürümü alsın.
-const CACHE = 'yorunge-v6';
+const CACHE = 'orbitap-v1';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
+  './i18n.js',
   './config.js',
   './native.js',
   './ads.js',

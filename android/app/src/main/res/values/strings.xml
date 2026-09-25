@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Yörünge</string>
-    <string name="title_activity_main">Yörünge</string>
-    <string name="package_name">com.alaystudio.yorunge</string>
-    <string name="custom_url_scheme">com.alaystudio.yorunge</string>
+    <string name="app_name">Orbitap</string>
+    <string name="title_activity_main">Orbitap</string>
+    <string name="package_name">com.alaystudio.orbitap</string>
+    <string name="custom_url_scheme">com.alaystudio.orbitap</string>
 </resources>

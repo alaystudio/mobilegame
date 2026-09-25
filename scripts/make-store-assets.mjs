@@ -40,16 +40,16 @@ const JOBS = [
   { out: 'store/play-icon-512.png', w: 512, h: 512, html: svg(512, `<rect width="512" height="512" fill="url(#bg)"/>${ORBIT}`) },
   // App Store ikonu (1024, şeffaflık yok)
   { out: 'store/appstore-icon-1024.png', w: 1024, h: 1024, html: svg(1024, `<rect width="512" height="512" fill="url(#bg)"/>${ORBIT}`) },
-  // Google Play öne çıkan görsel (1024x500)
-  {
-    out: 'store/play-feature-1024x500.png', w: 1024, h: 500,
+  // Google Play öne çıkan görsel (1024x500), dil başına bir tane
+  ...Object.entries({ en: 'One tap. Endless orbit.', tr: 'Tek dokunuş. Sonsuz yörünge.' }).map(([lang, tagline]) => ({
+    out: `store/play-feature-${lang}.png`, w: 1024, h: 500,
     html: `<div style="width:1024px;height:500px;position:relative;overflow:hidden;background:radial-gradient(circle at 76% 50%,#1d2658 0,#05060f 62%);font-family:'Segoe UI',system-ui,sans-serif">
       <div style="position:absolute;right:40px;top:30px;width:440px;height:440px">${svg(440, ORBIT)}</div>
       <div style="position:absolute;left:64px;top:150px">
-        <div style="font-size:96px;font-weight:900;letter-spacing:.1em;background:linear-gradient(90deg,#3de8ff,#9d6bff 55%,#ff3d6e);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(61,232,255,.35))">YÖRÜNGE</div>
-        <div style="margin-top:14px;font-size:30px;font-weight:700;color:#e8edff">Tek dokunuş. Sonsuz yörünge.</div>
+        <div style="font-size:100px;font-weight:900;letter-spacing:.08em;background:linear-gradient(90deg,#3de8ff,#9d6bff 55%,#ff3d6e);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(61,232,255,.35))">ORBITAP</div>
+        <div style="margin-top:14px;font-size:30px;font-weight:700;color:#e8edff">${tagline}</div>
       </div></div>`,
-  },
+  })),
 ];
 
 async function launch() {

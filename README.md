@@ -1,4 +1,4 @@
-# YÖRÜNGE
+# ORBITAP
 
 Tek dokunuşla oynanan, mobil için tasarlanmış bir arcade oyunu. Top çekirdeğin etrafında döner.
 Ekrana dokununca iç ve dış yörünge arasında zıplar. Engellerden kaç, yıldız topla, rekorunu kır.
@@ -104,6 +104,8 @@ npm run ios         # www/ oluşturur, eşitler, Xcode'u açar (Mac gerekir)
 **Reklamlar:** `ads.js`, uygulamada `Capacitor.Plugins.AdMob`'u bulunca otomatik olarak gerçek AdMob'a geçer. Sırasıyla GDPR onay formunu (UMP) ve iOS'ta ATT iznini gösterir, sonra reklamları önceden yükler. Şu an bütün kimlikler Google'ın **test** kimlikleri. Gerçek kimliklerin girileceği yerler `docs/MAGAZA.md` kontrol listesinde.
 
 **1.0 için kapalı olanlar:** Geçiş reklamı (`CONFIG.interstitial.enabled`) ve "Reklamları kaldır" satın alımı (`CONFIG.removeAdsEnabled`). Satın alma, uygulama içi ödeme entegrasyonu (ör. RevenueCat) bağlanınca `ads.js` içindeki `purchaseRemoveAds` fonksiyonuna eklenecek.
+
+**Diller (`i18n.js`):** İngilizce ve Türkçe. Cihaz dili Türkçeyse Türkçe, değilse İngilizce açılır. Yeni dil için `STRINGS` içine aynı anahtarlarla bir sözlük ekle. HTML'deki sabit metinler `data-i18n` öznitelikleriyle çevrilir.
 
 **Yerel davranışlar (`native.js`):** iOS dahil gerçek titreşim (Haptics), gizli durum çubuğu, açılış ekranı, Android geri tuşu. Service worker sadece web sürümünde çalışır.
 

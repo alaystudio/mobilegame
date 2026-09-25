@@ -1,8 +1,8 @@
 {
-  "name": "Yörünge",
-  "short_name": "Yörünge",
-  "description": "Tek dokunuşla oynanan yörünge oyunu. Engellerden kaç, yıldız topla, rekorunu kır.",
-  "lang": "tr",
+  "name": "Orbitap",
+  "short_name": "Orbitap",
+  "description": "A one-tap orbit arcade game. Dodge obstacles, collect stars, beat your record.",
+  "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
@@ -10,9 +10,26 @@
   "background_color": "#05060f",
   "theme_color": "#05060f",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
   ]
 }

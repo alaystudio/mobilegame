@@ -1,6 +1,7 @@
-/* YÖRÜNGE — tek dokunuşla yörünge değiştirme oyunu. Bağımlılık yok, saf Canvas. */
+/* ORBITAP — tek dokunuşla yörünge değiştirme oyunu. Bağımlılık yok, saf Canvas. */
 (() => {
   'use strict';
+  const t = I18N.t;
 
   // ---------------------------------------------------------------- yardımcılar
   const TAU = Math.PI * 2;
@@ -58,38 +59,38 @@
 
   // Oyun içinde halkalarda çıkan güç topları
   const POWERS = {
-    magnet: { name: 'Mıknatıs', color: '#ff4d6d', base: 6, per: 1.5 },
-    slow:   { name: 'Yavaş Çekim', color: '#7cf5ff', base: 5, per: 1.2 },
-    double: { name: 'Çift Puan', color: '#ffd84d', base: 7, per: 1.5 },
+    magnet: { name: t('pw.magnet'), color: '#ff4d6d', base: 6, per: 1.5 },
+    slow:   { name: t('pw.slow'), color: '#7cf5ff', base: 5, per: 1.2 },
+    double: { name: t('pw.double'), color: '#ffd84d', base: 7, per: 1.5 },
   };
   const SHIELD_COLOR = '#6be0ff';
 
   // Günlük meydan okuma: herkes aynı tohum ve aynı günlük kuralla oynar
   const CHALLENGE_MODS = [
-    { id: 'fast', name: 'Hızlı Başlangıç', desc: 'Oyun baştan hızlı' },
-    { id: 'rings3', name: 'Üç Yörünge', desc: 'İlk andan itibaren 3 halka' },
-    { id: 'nopower', name: 'Güçsüz', desc: 'Kalkan ve güç topu yok' },
-    { id: 'breath', name: 'Nefes', desc: 'Halkalar baştan nefes alıyor' },
-    { id: 'stars', name: 'Yıldız Yağmuru', desc: 'Her yer yıldız dolu' },
+    { id: 'fast', name: t('mod.fast') },
+    { id: 'rings3', name: t('mod.rings3') },
+    { id: 'nopower', name: t('mod.nopower') },
+    { id: 'breath', name: t('mod.breath') },
+    { id: 'stars', name: t('mod.stars') },
   ];
   const SHIELD_NEED = [12, 10, 8, 7, 6];   // kalkan için gereken yıldız (geliştirme seviyesine göre)
   const UPG_COST = [60, 120, 200, 320];
   const UPG_MAX = 4;
   const durOf = (t, l) => String(+(POWERS[t].base + POWERS[t].per * l).toFixed(1));
   const UPGRADES = [
-    { id: 'shield', icon: '🛡️', name: 'Kalkan', color: SHIELD_COLOR, info: (l) => `Her ${SHIELD_NEED[l]} yıldızda bir kalkan dolar` },
-    { id: 'magnet', icon: '🧲', name: 'Mıknatıs', color: POWERS.magnet.color, info: (l) => `Yıldızları kendine çeker, ${durOf('magnet', l)} sn` },
-    { id: 'slow', icon: '⏳', name: 'Yavaş Çekim', color: POWERS.slow.color, info: (l) => `Zamanı yavaşlatır, ${durOf('slow', l)} sn` },
-    { id: 'double', icon: '×2', name: 'Çift Puan', color: POWERS.double.color, info: (l) => `Her geçiş 2 kat puan, ${durOf('double', l)} sn` },
+    { id: 'shield', icon: '🛡️', name: t('pw.shield'), color: SHIELD_COLOR, info: (l) => t('upg.shield', { n: SHIELD_NEED[l] }) },
+    { id: 'magnet', icon: '🧲', name: t('pw.magnet'), color: POWERS.magnet.color, info: (l) => t('upg.magnet', { s: durOf('magnet', l) }) },
+    { id: 'slow', icon: '⏳', name: t('pw.slow'), color: POWERS.slow.color, info: (l) => t('upg.slow', { s: durOf('slow', l) }) },
+    { id: 'double', icon: '×2', name: t('pw.double'), color: POWERS.double.color, info: (l) => t('upg.double', { s: durOf('double', l) }) },
   ];
   const LOOKAHEAD = Math.PI * 1.35;
 
   const LEVELS = [
     { at: 0,   bg1: '#141a3d', bg2: '#05060f', obs: '#ff3d6e', ring: '#8fa3ff', core: '#1d2658' },
     { at: 15,  bg1: '#2a0f45', bg2: '#08030f', obs: '#ff9f1c', ring: '#c69bff', core: '#3a1766' },
-    { at: 35,  bg1: '#06343a', bg2: '#010a0c', obs: '#ff4d8d', ring: '#6ff7e8', core: '#0b4a52', rings: 3, msg: '3. YÖRÜNGE AÇILDI' },
-    { at: 60,  bg1: '#3d0a16', bg2: '#0b0204', obs: '#ffd23f', ring: '#ff8fa6', core: '#5a1222', breath: true, msg: 'YÖRÜNGELER NEFES ALIYOR' },
-    { at: 90,  bg1: '#0f3a12', bg2: '#020a02', obs: '#ff5ef0', ring: '#9dff8f', core: '#15521b', rings: 4, msg: '4. YÖRÜNGE AÇILDI' },
+    { at: 35,  bg1: '#06343a', bg2: '#010a0c', obs: '#ff4d8d', ring: '#6ff7e8', core: '#0b4a52', rings: 3, msg: t('lvl.rings3') },
+    { at: 60,  bg1: '#3d0a16', bg2: '#0b0204', obs: '#ffd23f', ring: '#ff8fa6', core: '#5a1222', breath: true, msg: t('lvl.breath') },
+    { at: 90,  bg1: '#0f3a12', bg2: '#020a02', obs: '#ff5ef0', ring: '#9dff8f', core: '#15521b', rings: 4, msg: t('lvl.rings4') },
     { at: 130, bg1: '#1a1a1a', bg2: '#000000', obs: '#ffffff', ring: '#ff3d6e', core: '#2a2a2a' },
   ].map((l) => ({ ...l, bg1: hex(l.bg1), bg2: hex(l.bg2), obs: hex(l.obs), ring: hex(l.ring), core: hex(l.core) }));
 
@@ -98,22 +99,22 @@
   const BREATH_AMP = 0.028;
 
   const SKINS = [
-    { id: 'neon', name: 'Neon', price: 0, color: '#3de8ff' },
-    { id: 'lime', name: 'Limon', price: 40, color: '#b6ff3d' },
-    { id: 'rose', name: 'Gül', price: 80, color: '#ff6bd6' },
-    { id: 'sun', name: 'Güneş', price: 150, color: '#ffc93d' },
-    { id: 'ice', name: 'Buz', price: 250, color: '#e8f6ff' },
-    { id: 'lava', name: 'Lav', price: 400, color: '#ff5a1f' },
-    { id: 'void', name: 'Boşluk', price: 600, color: '#9d6bff' },
-    { id: 'rainbow', name: 'Gökkuşağı', price: 1000, color: '#ffffff', rainbow: true },
+    { id: 'neon', name: t('skin.neon'), price: 0, color: '#3de8ff' },
+    { id: 'lime', name: t('skin.lime'), price: 40, color: '#b6ff3d' },
+    { id: 'rose', name: t('skin.rose'), price: 80, color: '#ff6bd6' },
+    { id: 'sun', name: t('skin.sun'), price: 150, color: '#ffc93d' },
+    { id: 'ice', name: t('skin.ice'), price: 250, color: '#e8f6ff' },
+    { id: 'lava', name: t('skin.lava'), price: 400, color: '#ff5a1f' },
+    { id: 'void', name: t('skin.void'), price: 600, color: '#9d6bff' },
+    { id: 'rainbow', name: t('skin.rainbow'), price: 1000, color: '#ffffff', rainbow: true },
   ];
 
   const MISSION_TYPES = {
-    score:   { cum: false, text: (t) => `Tek oyunda ${t} puan yap` },
-    stars:   { cum: true,  text: (t) => `${t} yıldız topla` },
-    perfect: { cum: true,  text: (t) => `${t} kez PERFECT yap` },
-    games:   { cum: true,  text: (t) => `${t} oyun oyna` },
-    combo:   { cum: false, text: (t) => `x${t} kombo yakala` },
+    score:   { cum: false, text: (n) => t('mis.score', { n }) },
+    stars:   { cum: true,  text: (n) => t('mis.stars', { n }) },
+    perfect: { cum: true,  text: (n) => t('mis.perfect', { n }) },
+    games:   { cum: true,  text: (n) => t('mis.games', { n }) },
+    combo:   { cum: false, text: (n) => t('mis.combo', { n }) },
   };
 
   // ---------------------------------------------------------------- kayıt
@@ -130,7 +131,7 @@
   })();
   save.upg = Object.assign({ shield: 0, magnet: 0, slow: 0, double: 0 }, save.upg);
   if (!save.pid) save.pid = 'p' + Math.random().toString(36).slice(2, 12);
-  if (!save.name) save.name = 'Oyuncu' + String(Math.floor(1000 + Math.random() * 9000));
+  if (!save.name) save.name = t('board.defaultName') + String(Math.floor(1000 + Math.random() * 9000));
   // Meydan okumada geliştirmeler devre dışı: herkes eşit şartlarda
   const upgLvl = (t) => (S.challenge ? 0 : save.upg[t]);
   const powerDur = (t) => POWERS[t].base + POWERS[t].per * upgLvl(t);
@@ -505,10 +506,10 @@
       boostReady = false;
       S.shield = 1;
       S.pw.magnet = S.pwMax.magnet = powerDur('magnet');
-      popup('GÜÇLÜ BAŞLANGIÇ!', CX, CY - outerR() - 40, SHIELD_COLOR, 26, 1.4);
+      popup(t('pop.boost'), CX, CY - outerR() - 40, SHIELD_COLOR, 26, 1.4);
       updateBoostButtons();
     }
-    if (ch) popup(`MEYDAN OKUMA: ${today.mod.name.toLocaleUpperCase('tr')}`, CX, CY - outerR() - 40, '#ffd84d', 20, 2.2);
+    if (ch) popup(t('pop.challenge', { name: I18N.upper(today.mod.name) }), CX, CY - outerR() - 40, '#ffd84d', 20, 2.2);
     S.hint = S.tutorial ? 1 : 0;
     S.obs.length = 0; S.stars.length = 0; S.pops.length = 0; S.trail.length = 0;
     S.nextSpawn = S.angle + Math.PI * 0.55;
@@ -563,7 +564,7 @@
 
     if (!S.recordBeaten && save.best > 0 && S.score > save.best) {
       S.recordBeaten = true;
-      popup('YENİ REKOR!', CX, CY - outerR() - 40, '#ffd84d', 30, 1.6);
+      popup(t('pop.record'), CX, CY - outerR() - 40, '#ffd84d', 30, 1.6);
       Sound.record();
       vibrate([30, 40, 30]);
       for (let i = 0; i < 3; i++) burst(CX + rand(-80, 80), CY - outerR() - 30, `hsl(${rand(0, 360)},100%,65%)`, 16, 300, 3, 1);
@@ -571,7 +572,7 @@
     const next = LEVELS[S.levelIdx + 1];
     if (next && S.score >= next.at) {
       S.levelIdx++;
-      popup(`SEVİYE ${S.levelIdx + 1}`, CX, CY + outerR() + 44, '#fff', 28, 1.6);
+      popup(t('pop.level', { n: S.levelIdx + 1 }), CX, CY + outerR() + 44, '#fff', 28, 1.6);
       if (next.msg) popup(next.msg, CX, CY + outerR() + 76, rgba(next.ring), 17, 2.6);
       if (next.rings && next.rings > S.ringCount) S.pendingRings = next.rings;
       Sound.level();
@@ -646,7 +647,7 @@
         S.obs.splice(i, 1);
       }
     }
-    popup('DEVAM!', CX, CY - outerR() - 40, SHIELD_COLOR, 30, 1.4);
+    popup(t('pop.revive'), CX, CY - outerR() - 40, SHIELD_COLOR, 30, 1.4);
     Sound.level();
     vibrate(30);
     last = performance.now();
@@ -670,7 +671,7 @@
     if (S.mode === 'over' && S.challenge && YorungeBoard.online) {
       const top = await YorungeBoard.top(db, 100);
       const idx = top.findIndex((r) => r.pid === save.pid);
-      if (idx >= 0 && S.mode === 'over') $('overSub').textContent = `Bugünkü sıran: #${idx + 1} / ${top.length}`;
+      if (idx >= 0 && S.mode === 'over') $('overSub').textContent = t('over.rank', { r: idx + 1, n: top.length });
     }
   }
 
@@ -697,16 +698,16 @@
     $('newRecord').classList.toggle('hidden', !isRecord || S.score === 0);
     const gap = prevBest - S.score;
     let sub;
-    if (isRecord) sub = prevBest > 0 ? `Önceki rekor: ${prevBest}` : 'İlk rekorun! Şimdi kır bakalım.';
-    else if (gap <= Math.max(3, Math.ceil(prevBest * 0.2))) sub = gap === 0 ? 'Rekorla berabere! Bir puan daha!' : `Rekora ${gap} puan kaldı!`;
-    else sub = pick(['Bir daha dene!', 'Ritmi yakala!', 'Son anda kaç, PERFECT al!', 'Bu sefer olacak!']);
+    if (isRecord) sub = prevBest > 0 ? t('over.prev', { n: prevBest }) : t('over.first');
+    else if (prevBest > 0 && gap <= Math.max(3, Math.ceil(prevBest * 0.2))) sub = gap === 0 ? t('over.tie') : t('over.gap', { n: gap });
+    else sub = pick(t('over.tips'));
     if (S.challenge) {
-      sub = `Bugünün meydan okuması: ${S.score} puan`;
-      $('overLabel').textContent = 'MEYDAN OKUMA';
-      $('retryBtn').textContent = 'NORMAL OYUN';
+      sub = t('over.chScore', { n: S.score });
+      $('overLabel').textContent = t('over.challenge');
+      $('retryBtn').textContent = t('over.normal');
     } else {
-      $('overLabel').textContent = 'SKOR';
-      $('retryBtn').textContent = 'TEKRAR';
+      $('overLabel').textContent = t('over.score');
+      $('retryBtn').textContent = t('over.retry');
     }
     $('overSub').textContent = sub;
     $('doubleBtn').classList.toggle('hidden', !(S.runStars > 0 && YorungeAds.rewardedLeft() > 0));
@@ -720,7 +721,7 @@
     setTimeout(() => { retry.disabled = false; }, 350);
 
     done.forEach((m, i) => setTimeout(() => {
-      toast(`✓ Görev tamam: ${MISSION_TYPES[m.type].text(m.target)} <b>+${m.reward} ★</b>`);
+      toast(t('missions.done', { text: MISSION_TYPES[m.type].text(m.target), r: m.reward }));
       Sound.coin();
     }, 500 + i * 700));
     updateMenuInfo();
@@ -890,7 +891,7 @@
       S.shieldProg++;
       if (S.shieldProg >= shieldNeed()) {
         S.shield = 1; S.shieldProg = 0;
-        popup('KALKAN HAZIR!', CX, CY + outerR() + 44, SHIELD_COLOR, 22, 1.4);
+        popup(t('pop.shieldReady'), CX, CY + outerR() + 44, SHIELD_COLOR, 22, 1.4);
         Sound.shieldUp();
         vibrate(20);
       }
@@ -903,7 +904,7 @@
     const [x, y] = polar(o.a, obsRadius(o));
     burst(x, y, SHIELD_COLOR, 26, 320, 3.5, 0.9);
     burst(x, y, rgba(S.pal.obs), 14, 260, 3);
-    popup('KALKAN!', x, y - 26, SHIELD_COLOR, 24, 1);
+    popup(t('pop.shield'), x, y - 26, SHIELD_COLOR, 24, 1);
     S.shake = 9; S.flash = 0.4; S.combo = 0; S.comboT = 0;
     Sound.shieldBreak();
     vibrate([40, 30, 40]);
@@ -1030,7 +1031,7 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = S.shield ? SHIELD_COLOR : 'rgba(255,255,255,0.55)';
-    ctx.fillText(S.shield ? 'KALKAN HAZIR' : `KALKAN ${S.shieldProg}/${need} ★`, CX, y + r + 14);
+    ctx.fillText(S.shield ? t('hud.shieldReady') : t('hud.shield', { a: S.shieldProg, b: need }), CX, y + r + 14);
   }
 
   function render() {
@@ -1104,11 +1105,11 @@
       if (S.combo > 1 && S.mode === 'play') {
         ctx.font = `800 ${CORE_R * 0.24}px system-ui, sans-serif`;
         ctx.fillStyle = ballColor();
-        ctx.fillText(`KOMBO x${S.combo}`, CX, CY + CORE_R * 0.62);
+        ctx.fillText(t('hud.combo', { n: S.combo }), CX, CY + CORE_R * 0.62);
       } else if (S.mode === 'play' && !S.recordBeaten && save.best > 0 && save.best - S.score > 0 && save.best - S.score <= 5) {
         ctx.font = `800 ${CORE_R * 0.22}px system-ui, sans-serif`;
         ctx.fillStyle = `rgba(255,216,77,${0.6 + 0.4 * Math.sin(S.time * 10)})`;
-        ctx.fillText(`Rekora ${save.best - S.score}!`, CX, CY + CORE_R * 0.62);
+        ctx.fillText(t('hud.toRecord', { n: save.best - S.score }), CX, CY + CORE_R * 0.62);
       }
     }
 
@@ -1257,7 +1258,7 @@
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'left';
       ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.fillText(`EN İYİ ${Math.max(save.best, S.recordBeaten ? S.score : 0)}`, 18, top);
+      ctx.fillText(t('hud.best', { n: Math.max(save.best, S.recordBeaten ? S.score : 0) }), 18, top);
       ctx.textAlign = 'right';
       ctx.fillStyle = '#ffd84d';
       ctx.fillText(`★ ${save.stars + S.runStars}`, W - 18, top);
@@ -1269,10 +1270,10 @@
       ctx.globalAlpha = Math.min(1, S.dirHint);
       ctx.fillStyle = '#fff';
       ctx.font = '800 17px system-ui, sans-serif';
-      ctx.fillText('Top gel-git yapar', CX, y);
+      ctx.fillText(t('hint.pingpong'), CX, y);
       ctx.font = '600 14px system-ui, sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.fillText('Oktaki yön, bir sonraki dokunuşun', CX, y + 22);
+      ctx.fillText(t('hint.arrow'), CX, y + 22);
       ctx.globalAlpha = 1;
     }
 
@@ -1281,10 +1282,10 @@
       ctx.textAlign = 'center';
       ctx.fillStyle = `rgba(255,255,255,${0.65 + 0.35 * Math.sin(S.time * 6)})`;
       ctx.font = '800 18px system-ui, sans-serif';
-      ctx.fillText('DOKUN → yörünge değiştir', CX, y);
+      ctx.fillText(t('hint.tap'), CX, y);
       ctx.font = '600 14px system-ui, sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.fillText('Engele çok yakınken kaç: PERFECT!', CX, y + 26);
+      ctx.fillText(t('hint.perfect'), CX, y + 26);
     }
 
     if (S.paused && S.mode === 'play') {
@@ -1293,9 +1294,9 @@
       ctx.fillStyle = '#fff';
       ctx.textAlign = 'center';
       ctx.font = '900 28px system-ui, sans-serif';
-      ctx.fillText('DURAKLATILDI', CX, CY - 12);
+      ctx.fillText(t('pause.title'), CX, CY - 12);
       ctx.font = '600 16px system-ui, sans-serif';
-      ctx.fillText('Devam etmek için dokun', CX, CY + 22);
+      ctx.fillText(t('pause.sub'), CX, CY + 22);
     }
   }
 
@@ -1328,11 +1329,11 @@
     $('streakVal').textContent = save.streak;
     $('soundIcon').textContent = save.sound ? '🔊' : '🔇';
     const ch = challengeState();
-    const t = todayChallenge();
+    const today = todayChallenge();
     let sub;
-    if (ch.used < 1 + (ch.adUsed ? 1 : 0)) sub = `Bugün: ${t.mod.name} · 1 hak`;
-    else if (!ch.adUsed && YorungeAds.rewardedLeft() > 0) sub = `▶ Reklam izle, +1 hak · En iyi: ${ch.best || 0}`;
-    else sub = `Yarın yeni meydan okuma · En iyi: ${ch.best || 0}`;
+    if (ch.used < 1 + (ch.adUsed ? 1 : 0)) sub = t('ch.today', { name: today.mod.name });
+    else if (!ch.adUsed && YorungeAds.rewardedLeft() > 0) sub = t('ch.ad', { n: ch.best || 0 });
+    else sub = t('ch.tomorrow', { n: ch.best || 0 });
     $('challengeSub').textContent = sub;
     updateBoostButtons();
     $('missionDot').classList.toggle('hidden', save.missions.every((m) => m.done));
@@ -1361,8 +1362,8 @@
       const btn = document.createElement('button');
       btn.className = 'skin' + (save.skin === s.id ? ' selected' : '') + (owned ? '' : ' locked');
       let price;
-      if (save.skin === s.id) price = '<span class="price ok">Seçili</span>';
-      else if (owned) price = '<span class="price ok">Seç</span>';
+      if (save.skin === s.id) price = `<span class="price ok">${t('skins.selected')}</span>`;
+      else if (owned) price = `<span class="price ok">${t('skins.select')}</span>`;
       else price = `<span class="price ${save.stars >= s.price ? '' : 'cant'}">★ ${s.price}</span>`;
       btn.innerHTML =
         `<span class="ball${s.rainbow ? ' rainbow' : ''}" style="background:${s.color};box-shadow:0 0 14px ${s.color}"></span>` +
@@ -1375,9 +1376,9 @@
           save.owned.push(s.id);
           save.skin = s.id;
           Sound.init(); Sound.coin();
-          toast(`Yeni top açıldı: <b>${s.name}</b>`);
+          toast(t('skins.unlocked', { name: s.name }));
         } else {
-          toast(`${s.price - save.stars} ★ daha lazım`);
+          toast(t('needStars', { n: s.price - save.stars }));
           return;
         }
         persist();
@@ -1393,7 +1394,7 @@
     const na = $('noAdsBtn');
     na.classList.toggle('hidden', !YorungeAds.removeAdsAvailable() && !YorungeAds.noAds());
     $('adPrefsBtn').classList.toggle('hidden', !YorungeAds.privacyOptionsRequired());
-    na.textContent = YorungeAds.noAds() ? '✓ Geçiş reklamları kaldırıldı' : 'Geçiş reklamlarını kaldır';
+    na.textContent = YorungeAds.noAds() ? t('powers.noAdsDone') : t('powers.noAds');
     na.disabled = YorungeAds.noAds();
     const list = $('upgList');
     list.innerHTML = '';
@@ -1408,17 +1409,17 @@
       li.innerHTML =
         `<span class="upg-icon" style="--c:${u.color}">${u.icon}</span>` +
         `<div class="upg-body"><b>${u.name}</b><span class="upg-info">${u.info(lvl)}</span>` +
-        (maxed ? '' : `<span class="upg-next">Sonraki: ${u.info(lvl + 1)}</span>`) +
+        (maxed ? '' : `<span class="upg-next">${t('powers.next', { x: u.info(lvl + 1) })}</span>`) +
         `<span class="pips">${pips}</span></div>` +
-        `<button class="upg-buy${!maxed && save.stars < cost ? ' cant' : ''}" ${maxed ? 'disabled' : ''}>${maxed ? 'MAKS' : `★ ${cost}`}</button>`;
+        `<button class="upg-buy${!maxed && save.stars < cost ? ' cant' : ''}" ${maxed ? 'disabled' : ''}>${maxed ? t('powers.max') : `★ ${cost}`}</button>`;
       li.querySelector('button').addEventListener('click', () => {
         if (maxed) return;
-        if (save.stars < cost) { toast(`${cost - save.stars} ★ daha lazım`); return; }
+        if (save.stars < cost) { toast(t('needStars', { n: cost - save.stars })); return; }
         save.stars -= cost;
         save.upg[u.id]++;
         persist();
         Sound.init(); Sound.coin();
-        toast(`${u.name} geliştirildi: <b>Seviye ${save.upg[u.id] + 1}</b>`);
+        toast(t('powers.upgraded', { name: u.name, n: save.upg[u.id] + 1 }));
         renderPowers();
         updateMenuInfo();
       });
@@ -1453,7 +1454,7 @@
       startRun({ challenge: true });
       return;
     }
-    toast('Bugünkü hakların bitti. Yarın yeni meydan okuma!');
+    toast(t('ch.noTries'));
   }
 
   // Güçlü başlangıç: reklam izle, sonraki tura kalkan + mıknatısla başla
@@ -1464,7 +1465,7 @@
       const avail = boostReady || YorungeAds.rewardedLeft() > 0;
       b.classList.toggle('hidden', !avail || (S.mode === 'over' && S.challenge));
       b.classList.toggle('ready', boostReady);
-      b.querySelector('.bt').textContent = boostReady ? '✓ Güçlü başlangıç hazır' : '▶ Güçlü başla';
+      b.querySelector('.bt').textContent = boostReady ? t('menu.boostReady') : t('menu.boost');
     }
   }
   async function takeBoost() {
@@ -1485,7 +1486,7 @@
     persist();
     $('overStars').textContent = '+' + S.runStars * 2;
     $('doubleBtn').classList.add('hidden');
-    toast(`Yıldızlar 2 katına çıktı: <b>+${S.runStars} ★</b>`);
+    toast(t('reward.stars', { n: S.runStars }));
     Sound.coin();
     updateMenuInfo();
   }
@@ -1493,7 +1494,7 @@
   let giftBonus = 0;
   function showGift(bonus) {
     giftBonus = bonus;
-    $('giftStreak').textContent = save.streak;
+    $('giftLabel').textContent = t('gift.streak', { n: save.streak });
     $('giftAmt').textContent = bonus;
     $('giftDouble').classList.toggle('hidden', YorungeAds.rewardedLeft() <= 0);
     show('gift');
@@ -1505,7 +1506,7 @@
     save.stars += giftBonus;
     persist();
     $('gift').classList.add('hidden');
-    toast(`Günlük ödül 2 katına çıktı: <b>+${giftBonus * 2} ★</b>`);
+    toast(t('reward.gift', { n: giftBonus * 2 }));
     Sound.coin();
     updateMenuInfo();
   }
@@ -1516,17 +1517,17 @@
     $('nameInput').value = save.name;
     document.querySelectorAll('#board .tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === boardTab));
     const list = $('boardList');
-    list.innerHTML = '<li class="board-empty">Yükleniyor…</li>';
+    list.innerHTML = `<li class="board-empty">${t('board.loading')}</li>`;
     const key = boardTab === 'all' ? 'all' : boardDaily();
     await submitScores();
     const rows = await YorungeBoard.top(key, 50);
     list.innerHTML = '';
-    const note = { local: 'Çevrimiçi sıralama henüz bağlı değil. Şimdilik bu cihazdaki skorların görünüyor.', artifact: 'Önizleme sıralaması: bu sayfayı açabilen herkes aynı tabloyu görür.', firebase: '' }[YorungeBoard.providerName];
-    $('boardNote').textContent = boardTab === 'daily' ? `Bugünün kuralı: ${todayChallenge().mod.name}. ${note}` : note;
+    const note = { local: t('board.local'), artifact: t('board.artifact'), firebase: '' }[YorungeBoard.providerName];
+    $('boardNote').textContent = boardTab === 'daily' ? `${t('board.rule', { name: todayChallenge().mod.name })} ${note}` : note;
     if (!rows.length) {
       const li = document.createElement('li');
       li.className = 'board-empty';
-      li.textContent = boardTab === 'all' ? 'Henüz skor yok. İlk sen ol!' : 'Bugün henüz kimse oynamadı. İlk sen ol!';
+      li.textContent = boardTab === 'all' ? t('board.emptyAll') : t('board.emptyDaily');
       list.appendChild(li);
       return;
     }
@@ -1534,7 +1535,7 @@
       const li = document.createElement('li');
       li.className = 'board-row' + (r.pid === save.pid ? ' me' : '') + (i < 3 ? ' top' + (i + 1) : '');
       const rank = document.createElement('span'); rank.className = 'rank'; rank.textContent = i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1;
-      const name = document.createElement('span'); name.className = 'pname'; name.textContent = r.name + (r.pid === save.pid ? ' (sen)' : '');
+      const name = document.createElement('span'); name.className = 'pname'; name.textContent = r.name + (r.pid === save.pid ? t('board.you') : '');
       const sc = document.createElement('span'); sc.className = 'pscore'; sc.textContent = r.score;
       li.append(rank, name, sc);
       list.appendChild(li);
@@ -1542,11 +1543,11 @@
   }
   async function saveName() {
     const v = $('nameInput').value.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 14);
-    if (!v) { toast('Bir isim yaz'); return; }
+    if (!v) { toast(t('board.needName')); return; }
     save.name = v;
     persist();
     $('nameInput').blur();
-    toast(`İsmin kaydedildi: <b>${v.replace(/&/g, '&amp;')}</b>`);
+    toast(t('board.saved', { name: v.replace(/&/g, '&amp;') }));
     await submitScores(true);
     renderBoard();
   }
@@ -1561,7 +1562,7 @@
       const pct = Math.round((m.progress / m.target) * 100);
       li.innerHTML =
         `<div class="row"><span>${m.done ? '✓ ' : ''}${MISSION_TYPES[m.type].text(m.target)}</span>` +
-        `<span class="reward">${m.done ? 'Alındı' : `+${m.reward} ★`}</span></div>` +
+        `<span class="reward">${m.done ? t('missions.claimed') : `+${m.reward} ★`}</span></div>` +
         `<div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div>` +
         `<div class="prog">${m.progress} / ${m.target}</div>`;
       list.appendChild(li);
@@ -1594,7 +1595,7 @@
   $('noAdsBtn').addEventListener('click', async () => {
     if (YorungeAds.noAds()) return;
     const ok = await YorungeAds.purchaseRemoveAds();
-    if (ok) { toast('Geçiş reklamları kaldırıldı. Teşekkürler!'); renderPowers(); }
+    if (ok) { toast(t('powers.noAdsThanks')); renderPowers(); }
   });
   $('homeBtn').addEventListener('click', (e) => { e.stopPropagation(); showMenu(); });
   $('skinsBtn').addEventListener('click', () => { renderSkins(); show('skins'); });
@@ -1660,6 +1661,7 @@
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 
   // ---------------------------------------------------------------- başlat
+  I18N.apply();
   YorungeAds.init();
   YorungeBoard.init();
   resize();

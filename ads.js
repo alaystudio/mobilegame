@@ -1,4 +1,4 @@
-/* YÖRÜNGE — reklam altyapısı.
+/* ORBITAP — reklam altyapısı.
  *
  * Oyun yalnızca bu arayüzü kullanır:
  *   YorungeAds.init()
@@ -13,6 +13,7 @@
  */
 (() => {
   'use strict';
+  const t = (k, v) => (window.I18N ? I18N.t(k, v) : k);
 
   const CONFIG = {
     rewardedDailyCap: 10,          // günde en fazla ödüllü reklam
@@ -114,7 +115,7 @@
     async rewarded() {
       const AdMob = admobPlugin();
       if (!this.rewardedReady && !(await this.preloadRewarded())) {
-        MockProvider.notice('Şu an reklam yok, biraz sonra tekrar dene.');
+        MockProvider.notice(t('ad.none'));
         return false;
       }
       this.rewardedReady = false;
@@ -158,19 +159,19 @@
     ready: true,
     async init() {},
     notice(text) {
-      const el = overlay(`<p class="ad-text">${text}</p><div class="ad-actions"><button class="ad-btn" id="adOk">Tamam</button></div>`);
+      const el = overlay(`<p class="ad-text">${text}</p><div class="ad-actions"><button class="ad-btn" id="adOk">${t('ad.ok')}</button></div>`);
       el.querySelector('#adOk').addEventListener('click', () => el.remove());
     },
     rewarded() {
       return new Promise((resolve) => {
         let left = 5;
         const el = overlay(
-          `<div class="ad-tag">TEST REKLAMI</div>
-           <div class="ad-visual"><span>Burada ödüllü reklam oynar</span></div>
-           <div class="ad-count">Ödül için <b id="adLeft">${left}</b> sn</div>
+          `<div class="ad-tag">${t('ad.test')}</div>
+           <div class="ad-visual"><span>${t('ad.rewardHere')}</span></div>
+           <div class="ad-count">${t('ad.left', { n: left })}</div>
            <div class="ad-actions">
-             <button class="ad-btn ghost" id="adClose">Kapat (ödül yok)</button>
-             <button class="ad-btn" id="adClaim" disabled>Ödülü al</button>
+             <button class="ad-btn ghost" id="adClose">${t('ad.close')}</button>
+             <button class="ad-btn" id="adClaim" disabled>${t('ad.claim')}</button>
            </div>`);
         const claim = el.querySelector('#adClaim');
         const t = setInterval(() => {
@@ -187,14 +188,14 @@
     interstitial() {
       return new Promise((resolve) => {
         const el = overlay(
-          `<div class="ad-tag">TEST GEÇİŞ REKLAMI</div>
-           <div class="ad-visual"><span>Burada geçiş reklamı oynar</span></div>
+          `<div class="ad-tag">${t('ad.testInter')}</div>
+           <div class="ad-visual"><span>${t('ad.interHere')}</span></div>
            <div class="ad-actions"><button class="ad-btn" id="adSkip" disabled>2</button></div>`);
         const b = el.querySelector('#adSkip');
         let left = 2;
         const t = setInterval(() => {
           left--;
-          if (left <= 0) { clearInterval(t); b.disabled = false; b.textContent = 'Kapat ✕'; } else b.textContent = left;
+          if (left <= 0) { clearInterval(t); b.disabled = false; b.textContent = t('ad.closeX'); } else b.textContent = left;
         }, 1000);
         b.addEventListener('click', () => { clearInterval(t); el.remove(); resolve(); });
       });
@@ -202,11 +203,11 @@
     purchaseRemoveAds() {
       return new Promise((resolve) => {
         const el = overlay(
-          `<div class="ad-tag">TEST SATIN ALMA</div>
-           <p class="ad-text">Mağaza sürümünde burada gerçek ödeme ekranı açılır. Test için ücretsiz onaylayabilirsin.</p>
+          `<div class="ad-tag">${t('ad.testBuy')}</div>
+           <p class="ad-text">${t('ad.buyText')}</p>
            <div class="ad-actions">
-             <button class="ad-btn ghost" id="buyNo">Vazgeç</button>
-             <button class="ad-btn" id="buyYes">Onayla</button>
+             <button class="ad-btn ghost" id="buyNo">${t('ad.cancel')}</button>
+             <button class="ad-btn" id="buyYes">${t('ad.confirm')}</button>
            </div>`);
         el.querySelector('#buyNo').addEventListener('click', () => { el.remove(); resolve(false); });
         el.querySelector('#buyYes').addEventListener('click', () => { el.remove(); resolve(true); });

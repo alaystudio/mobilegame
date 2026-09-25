@@ -1,6 +1,6 @@
 {
-  "appId": "com.alaystudio.yorunge",
-  "appName": "Yörünge",
+  "appId": "com.alaystudio.orbitap",
+  "appName": "Orbitap",
   "webDir": "www",
   "backgroundColor": "#05060f",
   "android": {

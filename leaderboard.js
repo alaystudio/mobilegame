@@ -1,4 +1,4 @@
-/* YÖRÜNGE — liderlik tablosu.
+/* ORBITAP — liderlik tablosu.
  *
  * Oyun yalnızca bu arayüzü kullanır:
  *   YorungeBoard.init()                 -> sağlayıcıyı seçer
@@ -65,7 +65,7 @@
       },
       async top(board, n) {
         const snap = await db.collection(collectionFor(board)).orderBy('score', 'desc').limit(n).get();
-        return snap.docs.map((d) => ({ pid: d.id, name: String(d.data().name || 'Oyuncu'), score: Number(d.data().score) || 0 }));
+        return snap.docs.map((d) => ({ pid: d.id, name: String(d.data().name || 'Player'), score: Number(d.data().score) || 0 }));
       },
     };
   }

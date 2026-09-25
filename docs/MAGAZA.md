@@ -1,9 +1,10 @@
-# Yörünge: Mağaza Yayın Paketi
+# Orbitap: Mağaza Yayın Paketi
 
 Bu doküman App Store Connect ve Google Play Console'a girilecek bütün metinleri, form cevaplarını ve görselleri tek yerde toplar. Parantez içindeki sayılar karakter sınırıdır.
 
-- Paket adı / Bundle ID: `com.alaystudio.yorunge`
+- Paket adı / Bundle ID: `com.alaystudio.orbitap`
 - Sürüm: 1.0 (derleme 1)
+- Diller: İngilizce (varsayılan) ve Türkçe. Oyun cihaz diline göre açılır.
 - Kategori: Oyunlar → Arcade (Play) / Games → Arcade + Casual (App Store)
 - Gizlilik politikası: `https://alaystudio.github.io/mobilegame/privacy.html` (GitHub Pages açıldıktan sonra)
 
@@ -13,7 +14,8 @@ Bu doküman App Store Connect ve Google Play Console'a girilecek bütün metinle
 |---|---|
 | `store/appstore-icon-1024.png` | App Store Connect ikonu (Xcode'daki AppIcon zaten aynı görsel) |
 | `store/play-icon-512.png` | Play Console → Ana mağaza girişi → Uygulama simgesi |
-| `store/play-feature-1024x500.png` | Play Console → Öne çıkan grafik |
+| `store/play-feature-en.png` | Play Console → Öne çıkan grafik (İngilizce, varsayılan) |
+| `store/play-feature-tr.png` | Play Console → Öne çıkan grafik (Türkçe çeviri) |
 | `store/screenshots/tr/ios69-1..5.png` | App Store → iPhone 6.9" ekran görüntüleri (Türkçe) |
 | `store/screenshots/en/ios69-1..5.png` | App Store → iPhone 6.9" (İngilizce) |
 | `store/screenshots/tr/play-1..5.png` | Play Console → Telefon ekran görüntüleri (Türkçe) |
@@ -21,14 +23,58 @@ Bu doküman App Store Connect ve Google Play Console'a girilecek bütün metinle
 
 Görselleri yeniden üretmek için: `npm run assets` ve `npm run screenshots`.
 
-> Oyunun arayüzü şu an sadece Türkçe. İngilizce mağaza listelemesi ekran görüntülerinde Türkçe arayüz gösterir. İlk sürümü sadece Türkçe listelemeyle çıkarmak ya da İngilizce listelemeyi arayüz çevirisinden sonra eklemek daha tutarlı olur.
+Varsayılan dil olarak **İngilizce (en-US)** seç, **Türkçe (tr-TR)** listelemeyi çeviri olarak ekle. Her dilin ekran görüntülerinde oyun o dilde görünüyor.
+
+---
+
+## İngilizce listeleme (varsayılan)
+
+**App name** (30): `Orbitap: One Tap Orbit`
+
+**App Store subtitle** (30): `Dodge, collect, beat your best`
+
+**Play short description** (80): `Switch orbits with one tap, dodge obstacles, collect stars and beat your record!`
+
+**App Store promotional text** (170): `A new challenge every day! Everyone races the same obstacle course. Climb to the top of today's leaderboard.`
+
+**Description**
+```
+The ball spins around the core. Tap to switch orbits. Dodge at the very last moment and score a PERFECT!
+
+Orbitap is a one-tap arcade game that gets deeper the better you get. Every run starts in seconds, and it's hard to stop at just one more.
+
+HOW TO PLAY
+• Tap the screen to jump between the inner and outer orbit
+• Avoid obstacles, collect stars
+• Dodge right before an obstacle to score PERFECT and build combos
+
+NEW ORBITS
+• A third and then a fourth orbit unlock as your score climbs
+• Orbits start to breathe and the rhythm changes
+• Gates, ladders and shape-shifting obstacles
+
+POWER-UPS
+• Shield: fills as you collect stars and forgives one hit
+• Magnet: pulls stars toward you
+• Slow Motion and Double Points
+• Upgrade your powers and unlock new balls with stars
+
+A REASON TO COME BACK EVERY DAY
+• Daily Challenge: everyone plays the same course
+• Leaderboards: all-time and today's best
+• Daily missions and streak rewards
+
+Ads are optional: watch one only when you want an extra reward. Plays offline too.
+```
+
+**Keywords** (100): `orbit,arcade,reflex,one tap,space,ball,timing,high score,daily challenge,stars,hyper casual`
 
 ---
 
 ## Türkçe listeleme
 
 **Uygulama adı** (App Store 30 / Play 30)
-`Yörünge: Tek Dokunuş`
+`Orbitap: Tek Dokunuş`
 
 **App Store alt başlık** (30)
 `Kaç, topla, rekorunu kır`
@@ -43,7 +89,7 @@ Görselleri yeniden üretmek için: `npm run assets` ve `npm run screenshots`.
 ```
 Top çekirdeğin etrafında dönüyor. Ekrana dokun, yörünge değiştir. Engele çarpmadan son anda kaç ve PERFECT yakala!
 
-Yörünge, tek dokunuşla oynanan ama ustalaştıkça derinleşen bir arcade oyunu. Her tur birkaç saniyede başlar, "bir tur daha" demeden bırakamazsın.
+Orbitap, tek dokunuşla oynanan ama ustalaştıkça derinleşen bir arcade oyunu. Her tur birkaç saniyede başlar, "bir tur daha" demeden bırakamazsın.
 
 NASIL OYNANIR
 • Ekrana dokun: top iç ve dış yörünge arasında zıplar
@@ -70,51 +116,7 @@ Reklamlar isteğe bağlıdır: sadece ekstra ödül istediğinde izlersin. Oyun 
 ```
 
 **App Store anahtar kelimeler** (100, virgülle ve boşluksuz)
-`arcade,refleks,tek dokunuş,uzay,top,zamanlama,rekor,meydan okuma,yıldız,hyper casual,orbit`
-
----
-
-## İngilizce listeleme
-
-**App name** (30): `Yörünge: One Tap Orbit`
-
-**App Store subtitle** (30): `Dodge, collect, beat your best`
-
-**Play short description** (80): `Switch orbits with one tap, dodge obstacles, collect stars and beat your record!`
-
-**App Store promotional text** (170): `A new challenge every day! Everyone races the same obstacle course. Climb to the top of today's leaderboard.`
-
-**Description**
-```
-The ball spins around the core. Tap to switch orbits. Dodge at the very last moment and score a PERFECT!
-
-Yörünge is a one-tap arcade game that gets deeper the better you get. Every run starts in seconds, and it's hard to stop at just one more.
-
-HOW TO PLAY
-• Tap the screen to jump between the inner and outer orbit
-• Avoid obstacles, collect stars
-• Dodge right before an obstacle to score PERFECT and build combos
-
-NEW ORBITS
-• A third and then a fourth orbit unlock as your score climbs
-• Orbits start to breathe and the rhythm changes
-• Gates, ladders and shape-shifting obstacles
-
-POWER-UPS
-• Shield: fills as you collect stars and forgives one hit
-• Magnet: pulls stars toward you
-• Slow Motion and Double Points
-• Upgrade your powers and unlock new balls with stars
-
-A REASON TO COME BACK EVERY DAY
-• Daily Challenge: everyone plays the same course
-• Leaderboards: all-time and today's best
-• Daily missions and streak rewards
-
-Ads are optional: watch one only when you want an extra reward. Plays offline too.
-```
-
-**Keywords** (100): `arcade,reflex,one tap,orbit,space,ball,timing,high score,daily challenge,stars,hyper casual`
+`yörünge,arcade,refleks,tek dokunuş,uzay,top,zamanlama,rekor,meydan okuma,yıldız,hyper casual`
 
 ---
 

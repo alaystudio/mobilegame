@@ -1,4 +1,4 @@
-/* YÖRÜNGE — mağaza uygulamasına özel davranışlar (Capacitor).
+/* ORBITAP — mağaza uygulamasına özel davranışlar (Capacitor).
  * Web/PWA sürümünde hiçbir şey yapmaz. Oyun yalnızca şunları kullanır:
  *   YorungeNative.isNative
  *   YorungeNative.vibrate(pattern)   -> iOS dahil gerçek dokunsal geri bildirim

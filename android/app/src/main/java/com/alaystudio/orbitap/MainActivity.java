@@ -1,4 +1,4 @@
-package com.alaystudio.yorunge;
+package com.alaystudio.orbitap;
 
 import com.getcapacitor.BridgeActivity;
 

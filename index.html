@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
@@ -7,9 +7,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Yörünge">
-<meta name="description" content="Tek dokunuşla oynanan yörünge oyunu. Engellerden kaç, yıldız topla, rekorunu kır.">
-<title>Yörünge</title>
+<meta name="apple-mobile-web-app-title" content="Orbitap">
+<meta name="description" content="Orbitap: a one-tap orbit arcade game. Dodge obstacles, collect stars, beat your record.">
+<title>Orbitap</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -23,23 +23,23 @@
   <header class="bar">
     <div class="pill" id="streakPill">🔥 <span id="streakVal">1</span></div>
     <div class="bar-right">
-      <button class="pill pill-btn" id="soundBtn" aria-label="Sesi aç/kapat"><span id="soundIcon">🔊</span></button>
+      <button class="pill pill-btn" id="soundBtn" data-i18n-aria="menu.sound" aria-label="Sound"><span id="soundIcon">🔊</span></button>
       <div class="pill star">★ <span id="menuStars">0</span></div>
     </div>
   </header>
   <div class="menu-top">
-    <h1 class="logo">YÖRÜNGE</h1>
-    <div class="best-line">EN İYİ <b id="menuBest">0</b></div>
+    <h1 class="logo">ORBITAP</h1>
+    <div class="best-line"><span data-i18n="menu.best">EN İYİ</span> <b id="menuBest">0</b></div>
   </div>
   <div class="menu-bottom">
-    <button class="btn boost" id="boostBtn"><span class="bt">▶ Güçlü başla</span><small>reklam izle: kalkan + mıknatısla başla</small></button>
-    <button class="btn primary" id="playBtn">OYNA</button>
-    <button class="btn challenge" id="challengeBtn"><span class="ch-title">🏆 Günlük Meydan Okuma</span><span class="ch-sub" id="challengeSub"></span></button>
+    <button class="btn boost" id="boostBtn"><span class="bt">▶ Güçlü başla</span><small data-i18n="menu.boostSub">reklam izle: kalkan + mıknatısla başla</small></button>
+    <button class="btn primary" id="playBtn" data-i18n="menu.play">OYNA</button>
+    <button class="btn challenge" id="challengeBtn"><span class="ch-title" data-i18n="menu.challenge">🏆 Günlük Meydan Okuma</span><span class="ch-sub" id="challengeSub"></span></button>
     <div class="btn-row">
-      <button class="btn icon" id="powersBtn"><span class="ic">⚡</span>Güçler</button>
-      <button class="btn icon" id="skinsBtn"><span class="ic">●</span>Toplar</button>
-      <button class="btn icon" id="missionsBtn"><span class="ic">✓</span>Görevler<i class="dot hidden" id="missionDot"></i></button>
-      <button class="btn icon" id="boardBtn"><span class="ic">🏅</span>Sıralama</button>
+      <button class="btn icon" id="powersBtn"><span class="ic">⚡</span><span data-i18n="menu.powers">Güçler</span></button>
+      <button class="btn icon" id="skinsBtn"><span class="ic">●</span><span data-i18n="menu.balls">Toplar</span></button>
+      <button class="btn icon" id="missionsBtn"><span class="ic">✓</span><span data-i18n="menu.missions">Görevler</span><i class="dot hidden" id="missionDot"></i></button>
+      <button class="btn icon" id="boardBtn"><span class="ic">🏅</span><span data-i18n="menu.board">Sıralama</span></button>
     </div>
   </div>
 </section>
@@ -47,34 +47,34 @@
 <!-- OYUN SONU -->
 <section id="over" class="screen hidden">
   <div class="over-card">
-    <div class="badge hidden" id="newRecord">YENİ REKOR!</div>
+    <div class="badge hidden" id="newRecord" data-i18n="over.newRecord">YENİ REKOR!</div>
     <div class="label" id="overLabel">SKOR</div>
     <div class="big-score" id="overScore">0</div>
     <div class="sub" id="overSub"></div>
     <div class="stats">
-      <div><b id="overBest">0</b><span>EN İYİ</span></div>
-      <div><b id="overStars">0</b><span>YILDIZ</span></div>
-      <div><b id="overPerfect">0</b><span>PERFECT</span></div>
+      <div><b id="overBest">0</b><span data-i18n="over.best">EN İYİ</span></div>
+      <div><b id="overStars">0</b><span data-i18n="over.stars">YILDIZ</span></div>
+      <div><b id="overPerfect">0</b><span data-i18n="over.perfect">PERFECT</span></div>
     </div>
   </div>
   <div class="over-actions">
-    <button class="btn reward hidden" id="doubleBtn">▶ Yıldızları 2 katına çıkar <b>+<span id="doubleAmt">0</span> ★</b></button>
+    <button class="btn reward hidden" id="doubleBtn"><span data-i18n="over.double">▶ Yıldızları 2 katına çıkar</span> <b>+<span id="doubleAmt">0</span> ★</b></button>
     <button class="btn primary" id="retryBtn">TEKRAR</button>
-    <button class="btn boost small" id="overBoostBtn"><span class="bt">▶ Güçlü başla</span><small>kalkan + mıknatıs</small></button>
-    <button class="btn ghost" id="homeBtn">Menü</button>
+    <button class="btn boost small" id="overBoostBtn"><span class="bt">▶ Güçlü başla</span><small data-i18n="over.boostSub">kalkan + mıknatıs</small></button>
+    <button class="btn ghost" id="homeBtn" data-i18n="over.menu">Menü</button>
   </div>
 </section>
 
 <!-- DEVAM ET -->
 <section id="revive" class="screen hidden">
   <div class="revive-card">
-    <div class="label">SKORUN</div>
+    <div class="label" data-i18n="revive.score">SKORUN</div>
     <div class="big-score" id="reviveScore">0</div>
-    <p class="revive-text">Kaldığın yerden devam etmek ister misin?</p>
-    <button class="btn primary" id="reviveBtn">DEVAM ET · ★ <span id="reviveCost">30</span></button>
-    <button class="btn reward" id="reviveAdBtn">▶ Reklam izle, devam et</button>
+    <p class="revive-text" data-i18n="revive.ask">Kaldığın yerden devam etmek ister misin?</p>
+    <button class="btn primary" id="reviveBtn"><span data-i18n="revive.stars">DEVAM ET · ★</span> <span id="reviveCost">30</span></button>
+    <button class="btn reward" id="reviveAdBtn" data-i18n="revive.ad">▶ Reklam izle, devam et</button>
     <div class="revive-timer"><div id="reviveBar"></div></div>
-    <button class="btn ghost" id="reviveSkip">Hayır, bitir</button>
+    <button class="btn ghost" id="reviveSkip" data-i18n="revive.skip">Hayır, bitir</button>
   </div>
 </section>
 
@@ -82,11 +82,11 @@
 <section id="gift" class="screen hidden">
   <div class="gift-card">
     <div class="gift-flame">🔥</div>
-    <div class="label"><span id="giftStreak">1</span>. GÜN SERİSİ</div>
+    <div class="label" id="giftLabel"></div>
     <div class="gift-amt">+<span id="giftAmt">10</span> ★</div>
-    <p class="revive-text">Her gün gel, ödülün büyüsün.</p>
-    <button class="btn reward" id="giftDouble">▶ Reklam izle, 2 katını al</button>
-    <button class="btn ghost" id="giftTake">Al</button>
+    <p class="revive-text" data-i18n="gift.text">Her gün gel, ödülün büyüsün.</p>
+    <button class="btn reward" id="giftDouble" data-i18n="gift.double">▶ Reklam izle, 2 katını al</button>
+    <button class="btn ghost" id="giftTake" data-i18n="gift.take">Al</button>
   </div>
 </section>
 
@@ -94,17 +94,17 @@
 <section id="board" class="sheet hidden">
   <div class="sheet-panel">
     <div class="sheet-head">
-      <h2>Sıralama</h2>
+      <h2 data-i18n="board.title">Sıralama</h2>
       <button class="close" data-close>✕</button>
     </div>
     <div class="tabs">
-      <button class="tab active" data-tab="all">Tüm Zamanlar</button>
-      <button class="tab" data-tab="daily">Bugünün Meydan Okuması</button>
+      <button class="tab active" data-tab="all" data-i18n="board.all">Tüm Zamanlar</button>
+      <button class="tab" data-tab="daily" data-i18n="board.daily">Bugünün Meydan Okuması</button>
     </div>
     <div class="name-row">
-      <label for="nameInput">Adın</label>
+      <label for="nameInput" data-i18n="board.name">Adın</label>
       <input id="nameInput" maxlength="14" autocomplete="off" spellcheck="false">
-      <button id="nameSave">Kaydet</button>
+      <button id="nameSave" data-i18n="board.save">Kaydet</button>
     </div>
     <ol class="board-list" id="boardList"></ol>
     <p class="muted" id="boardNote"></p>
@@ -115,17 +115,17 @@
 <section id="powers" class="sheet hidden">
   <div class="sheet-panel">
     <div class="sheet-head">
-      <h2>Güçler</h2>
+      <h2 data-i18n="powers.title">Güçler</h2>
       <div class="pill star">★ <span id="powerStars">0</span></div>
       <button class="close" data-close>✕</button>
     </div>
-    <p class="sheet-note">Yıldız topladıkça kalkan dolar, engele çarpınca seni bir kez korur. Halkalarda çıkan güç toplarını topla. Geliştirdikçe güçler daha uzun sürer.</p>
+    <p class="sheet-note" data-i18n="powers.note">Yıldız topladıkça kalkan dolar, engele çarpınca seni bir kez korur. Halkalarda çıkan güç toplarını topla. Geliştirdikçe güçler daha uzun sürer.</p>
     <ul class="upg-list" id="upgList"></ul>
-    <button class="noads" id="noAdsBtn">Geçiş reklamlarını kaldır</button>
-    <p class="muted">Ödüllü reklamlar her zaman isteğe bağlıdır.</p>
+    <button class="noads" id="noAdsBtn" data-i18n="powers.noAds">Geçiş reklamlarını kaldır</button>
+    <p class="muted" data-i18n="powers.optional">Ödüllü reklamlar her zaman isteğe bağlıdır.</p>
     <div class="legal">
-      <button class="linkish hidden" id="adPrefsBtn">Reklam tercihleri</button>
-      <a class="linkish" href="privacy.html">Gizlilik politikası</a>
+      <button class="linkish hidden" id="adPrefsBtn" data-i18n="powers.adPrefs">Reklam tercihleri</button>
+      <a class="linkish" href="privacy.html" data-i18n="powers.privacy">Gizlilik politikası</a>
     </div>
   </div>
 </section>
@@ -134,7 +134,7 @@
 <section id="skins" class="sheet hidden">
   <div class="sheet-panel">
     <div class="sheet-head">
-      <h2>Toplar</h2>
+      <h2 data-i18n="skins.title">Toplar</h2>
       <div class="pill star">★ <span id="skinStars">0</span></div>
       <button class="close" data-close>✕</button>
     </div>
@@ -146,20 +146,21 @@
 <section id="missions" class="sheet hidden">
   <div class="sheet-panel">
     <div class="sheet-head">
-      <h2>Günlük Görevler</h2>
+      <h2 data-i18n="missions.title">Günlük Görevler</h2>
       <button class="close" data-close>✕</button>
     </div>
     <div class="streak-box">
       <div class="streak-num">🔥 <span id="streakBig">1</span></div>
-      <div>günlük seri<br><small>Her gün gir, bonus yıldızın artsın!</small></div>
+      <div><span data-i18n="missions.streak">günlük seri</span><br><small data-i18n="missions.streakSub">Her gün gir, bonus yıldızın artsın!</small></div>
     </div>
     <ul class="mission-list" id="missionList"></ul>
-    <p class="muted">Yeni görevler her gün gece yarısı gelir.</p>
+    <p class="muted" data-i18n="missions.refresh">Yeni görevler her gün gece yarısı gelir.</p>
   </div>
 </section>
 
 <div id="toasts"></div>
 
+<script src="i18n.js"></script>
 <script src="config.js"></script>
 <script src="native.js"></script>
 <script src="ads.js"></script>

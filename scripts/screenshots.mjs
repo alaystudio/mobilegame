@@ -61,12 +61,15 @@ const BOT = () => {
   })();
 };
 
-async function rawShots(browser, dev) {
-  const ctx = await browser.newContext({ viewport: { width: dev.w, height: dev.h }, deviceScaleFactor: dev.dpr, isMobile: true, hasTouch: true });
+async function rawShots(browser, dev, lang) {
+  const ctx = await browser.newContext({
+    viewport: { width: dev.w, height: dev.h }, deviceScaleFactor: dev.dpr, isMobile: true, hasTouch: true,
+    locale: lang === 'tr' ? 'tr-TR' : 'en-US',   // oyun arayüzü cihaz diline göre açılır
+  });
   await ctx.addInitScript((day) => {
     localStorage.setItem('yorunge.save.v1', JSON.stringify({
       tutorialDone: true, best: 142, stars: 380, lastDay: day, streak: 6, skin: 'neon',
-      owned: ['neon', 'lime', 'rose'], upg: { shield: 2, magnet: 1, slow: 1, double: 0 }, name: 'Yıldız',
+      owned: ['neon', 'lime', 'rose'], upg: { shield: 2, magnet: 1, slow: 1, double: 0 }, name: 'Nova',
     }));
   }, today());
   const p = await ctx.newPage();
@@ -107,7 +110,7 @@ async function rawShots(browser, dev) {
       const S = window.__yorunge.S;
       return S.combo >= 3 && S.ringCount === 2 && S.pendingRings === 0
         && S.pops.some((x) => x.text.startsWith('PERFECT') && x.life > x.max * 0.7)
-        && !S.pops.some((x) => /YÖRÜNGE|SEVİYE|REKOR/.test(x.text));
+        && !S.pops.some((x) => !x.text.startsWith('PERFECT') && !x.text.startsWith('+'));
     });
   shots.push(await p.screenshot());
 
@@ -164,10 +167,10 @@ async function compose(browser, dev, png, caption, out) {
 }
 
 const browser = await launch();
-for (const [name, dev] of Object.entries(DEVICES)) {
-  const shots = await rawShots(browser, dev);
-  for (const lang of Object.keys(CAPTIONS)) {
-    mkdirSync(`store/screenshots/${lang}`, { recursive: true });
+for (const lang of Object.keys(CAPTIONS)) {
+  mkdirSync(`store/screenshots/${lang}`, { recursive: true });
+  for (const [name, dev] of Object.entries(DEVICES)) {
+    const shots = await rawShots(browser, dev, lang);
     for (let i = 0; i < shots.length; i++) {
       const out = `store/screenshots/${lang}/${name}-${i + 1}.png`;
       await compose(browser, dev, shots[i], CAPTIONS[lang][i], out);

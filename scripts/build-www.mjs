@@ -2,7 +2,7 @@
 // Service worker ve manifest uygulamada gerekmez; native.js service worker'ı zaten kapatır.
 import { cpSync, rmSync, mkdirSync } from 'node:fs';
 
-const FILES = ['index.html', 'style.css', 'config.js', 'native.js', 'ads.js', 'leaderboard.js', 'game.js', 'privacy.html'];
+const FILES = ['index.html', 'style.css', 'i18n.js', 'config.js', 'native.js', 'ads.js', 'leaderboard.js', 'game.js', 'privacy.html'];
 rmSync('www', { recursive: true, force: true });
 mkdirSync('www');
 for (const f of FILES) cpSync(f, `www/${f}`);

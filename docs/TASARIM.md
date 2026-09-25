@@ -1,4 +1,4 @@
-# YÖRÜNGE — Oyun Tasarım Dokümanı
+# ORBITAP — Oyun Tasarım Dokümanı
 
 ## Özet
 Merkezdeki çekirdeğin etrafında dönen bir top. Ekrana **tek dokunuş** topu iç ve dış
@@ -18,7 +18,7 @@ Dokun → Oyna (30-120 sn) → Öl → Skor / "Rekora 3 kaldı!" → Anında TEK
 ## Mekanikler
 | Mekanik | Açıklama |
 |---|---|
-| Yörünge değiştirme | Dokununca top ~0.11 sn'de bir sonraki halkaya geçer. |
+| Orbitap değiştirme | Dokununca top ~0.11 sn'de bir sonraki halkaya geçer. |
 | Gel-git kontrolü | 3+ halkada top bir yönde ilerler, en iç/en dış halkada yön döner (iç → orta → dış → orta → iç). Topun yanındaki ok bir sonraki adımı gösterir. Tek dokunuş korunur, oyuncu önceden plan yapar. |
 | Engeller | Halkalar üzerinde sabit neon yaylar. Temas = ölüm. |
 | PERFECT | Engele çarpmadan hemen önce (≤0.18 sn) kaçarsan PERFECT. Kombo artar, +1+kombo puan. |
@@ -45,7 +45,7 @@ Bazı seviyeler oyunu gerçekten değiştirir:
 | Skor | Seviye | Yenilik |
 |---|---|---|
 | 35 | 3 | **3. yörünge doğar.** Dış halka ikiye ayrılır, gel-git kontrolü başlar. |
-| 60 | 4 | **Yörüngeler nefes alır.** Halkalar hafif faz farkıyla büyüyüp küçülür. |
+| 60 | 4 | **Orbitapler nefes alır.** Halkalar hafif faz farkıyla büyüyüp küçülür. |
 | 90 | 5 | **4. yörünge doğar.** |
 
 Yeni halka, ekrandaki engeller geçildikten sonra ~1 sn'lik bir animasyonla doğar. Bu sırada yeni engel gelmez, yani oyuncu adil bir geçiş yaşar.
@@ -70,7 +70,7 @@ Bu sistem yıldızlara kalıcı bir değer katar ve "bir tur daha oynayıp geli�
 
 ## Günlük Meydan Okuma
 - Her gün tarihten üretilen **tohumla** herkes aynı engel ve yıldız dizisini görür.
-- Günün kuralı da tohumdan seçilir: Hızlı Başlangıç, Üç Yörünge, Güçsüz, Nefes, Yıldız Yağmuru.
+- Günün kuralı da tohumdan seçilir: Hızlı Başlangıç, Üç Orbitap, Güçsüz, Nefes, Yıldız Yağmuru.
 - **Günde 1 hak + reklamla 1 hak.** Hak sistemi sadece bu modda var, ana oyun sınırsız.
 - Adalet için meydan okumada güç geliştirmeleri, devam etme ve güçlü başlangıç kapalı.
 - Skor, günün sıralama tablosuna gider. Oyun sonunda "Bugünkü sıran: #3 / 12" gösterilir.

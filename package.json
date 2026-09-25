@@ -1,8 +1,8 @@
 {
-  "name": "yorunge",
+  "name": "orbitap",
   "version": "1.0.0",
   "private": true,
-  "description": "Yörünge: tek dokunuşla oynanan mobil arcade oyunu",
+  "description": "Orbitap: one-tap orbit arcade game",
   "scripts": {
     "build": "node scripts/build-www.mjs",
     "sync": "npm run build && npx cap sync",
