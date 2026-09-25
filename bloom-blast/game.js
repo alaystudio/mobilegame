@@ -25,21 +25,45 @@
   const shade = (h, amt) => { const c = hexRgb(h).map((v) => clamp(Math.round(v + 255 * amt), 0, 255)); return `rgb(${c.join(',')})`; };
   const alpha = (a) => clamp(a, 0, 1).toFixed(3);
   const Garden = window.Garden;
-  const TASKS = Garden.TASKS;
+  const Ads = window.BloomAds;
+  const GARDENS = Garden.GARDENS;
+
+  // Tunables in one place, so they can be A/B tested later
+  const TUNING = {
+    startBoosters: { hammer: 2, bomb: 2, shuffle: 2 },
+    winSeedsFirst: [8, 4], // base + per star, first clear of a level
+    winSeedsReplay: [2, 1],
+    continueRows: 3, // rows cleared by the "watch ad to continue" rescue
+  };
+  const BOOSTERS = ['hammer', 'bomb', 'shuffle'];
+  const BOOSTER_ICONS = { hammer: '🔨', bomb: '💣', shuffle: '🔄' };
 
   // ---------------------------------------------------------------- save + language
   const SAVE_KEY = 'bb.save.v1';
   const deviceLang = (navigator.language || 'en').toLowerCase().startsWith('tr') ? 'tr' : 'en';
-  const DEFAULTS = { level: 1, stars: {}, best: 0, seeds: 0, garden: TASKS.map(() => -1), settings: { sound: true, vibe: true, lang: deviceLang } };
+  const emptyGardens = () => Object.fromEntries(GARDENS.map((gd) => [gd.id, gd.tasks.map(() => -1)]));
+  const DEFAULTS = { level: 1, stars: {}, best: 0, seeds: 0, gardens: emptyGardens(), view: 0, boosters: { ...TUNING.startBoosters }, settings: { sound: true, vibe: true, lang: deviceLang } };
   const save = (() => {
     const fresh = () => JSON.parse(JSON.stringify(DEFAULTS));
     try {
       const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
-      const out = { ...fresh(), ...s, settings: { ...DEFAULTS.settings, ...(s.settings || {}) } };
-      if (!Array.isArray(out.garden) || out.garden.length !== TASKS.length) out.garden = TASKS.map((_, i) => (Array.isArray(s.garden) && s.garden[i] >= 0 ? s.garden[i] : -1));
+      const out = { ...fresh(), ...s, settings: { ...DEFAULTS.settings, ...(s.settings || {}) }, boosters: { ...DEFAULTS.boosters, ...(s.boosters || {}) } };
+      const gs = emptyGardens();
+      if (Array.isArray(s.garden)) s.garden.forEach((v, i) => { if (i < gs.cottage.length) gs.cottage[i] = v; }); // first release kept one garden
+      for (const gd of GARDENS) {
+        const have = s.gardens && s.gardens[gd.id];
+        if (Array.isArray(have)) have.forEach((v, i) => { if (i < gs[gd.id].length) gs[gd.id][i] = v; });
+      }
+      out.gardens = gs;
+      delete out.garden;
       return out;
     } catch (e) { return fresh(); }
   })();
+  // the garden being built is the first one with an unbuilt step
+  const currentGarden = () => { const i = GARDENS.findIndex((gd) => save.gardens[gd.id].some((v) => v < 0)); return i < 0 ? GARDENS.length - 1 : i; };
+  const builtOf = (gi) => save.gardens[GARDENS[gi].id];
+  const viewGarden = () => clamp(save.view | 0, 0, currentGarden());
+  const gardenName = (gi) => t('garden_' + GARDENS[gi].id);
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* private mode */ } };
   const I18N = window.BB_I18N;
   const dict = () => I18N[save.settings.lang] || I18N.en;
@@ -54,7 +78,9 @@
   function toast(text) {
     const el = document.createElement('div');
     el.className = 'toast'; el.textContent = text;
-    $('toasts').appendChild(el);
+    const box = $('toasts');
+    box.appendChild(el);
+    while (box.children.length > 3) box.firstChild.remove();
     setTimeout(() => el.remove(), 2800);
   }
 
@@ -214,7 +240,9 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     stripY = hudBottom() + 8;
     stripH = Math.round(clamp(H * 0.13, 56, 120));
-    const top = stripY + stripH + 12, bottom = 20;
+    const bar = document.querySelector('#hud .boosters');
+    const barR = bar && bar.getBoundingClientRect();
+    const top = stripY + stripH + 12, bottom = barR && barR.height > 0 ? H - barR.top + 6 : 84;
     const avail = Math.max(100, H - top - bottom);
     cs = Math.floor(Math.min((W - 28) / N, avail / 11.6, 64));
     const total = cs * N + cs * 0.6 + cs * 3.2;
@@ -231,11 +259,11 @@
   }
   const homeView = () => {
     const pt = panelTop || H * 0.65;
-    return { x: 0, y: 0, w: W, h: H, cx: W / 2, groundY: pt * 0.52, depth: pt * 0.4, s: Math.min(W / 2.15, pt * 0.42), built: save.garden, t: S.t, appear: appearState() };
+    return { x: 0, y: 0, w: W, h: H, cx: W / 2, groundY: pt * 0.52, depth: pt * 0.4, s: Math.min(W / 2.15, pt * 0.42), garden: viewGarden(), built: builtOf(viewGarden()), t: S.t, appear: viewGarden() === currentGarden() ? appearState() : null };
   };
   const stripView = () => {
     const x = 10, w = W - 20;
-    return { x, y: stripY, w, h: stripH, cx: W / 2, groundY: stripY + stripH * 0.6, depth: stripH * 0.4, s: Math.min(w / 2.1, stripH * 0.85), built: save.garden, t: S.t, run: S.run };
+    return { x, y: stripY, w, h: stripH, cx: W / 2, groundY: stripY + stripH * 0.6, depth: stripH * 0.4, s: Math.min(w / 2.1, stripH * 0.85), garden: currentGarden(), built: builtOf(currentGarden()), t: S.t, run: S.run };
   };
   function appearState() {
     if (!S.appear) return null;
@@ -311,6 +339,9 @@
     if (S.mode === 'home') { Garden.drawScene(ctx, homeView()); drawParticles(); return; }
     if (S.mode !== 'play' && S.mode !== 'over') return;
     drawStrip();
+    const shake = S.shake != null && S.t - S.shake < 0.3 ? (1 - (S.t - S.shake) / 0.3) * cs * 0.12 : 0;
+    ctx.save();
+    if (shake) ctx.translate(rand(-shake, shake), rand(-shake, shake));
     // board: a wooden planter with dark soil cells
     rr(bx - 9, by - 9, cs * N + 18, cs * N + 18, 18);
     ctx.fillStyle = '#6b4a2e'; ctx.fill();
@@ -340,6 +371,18 @@
       const k = clamp(f.t / 0.35, 0, 1), s = cs * (1 - easeOut(k) * 0.6);
       drawBlock(f.x + (cs - s) / 2, f.y + (cs - s) / 2, s, COLORS[f.ci], 1 - k);
       if (k < 0.3) { ctx.fillStyle = `rgba(255,255,255,${alpha(0.6 * (1 - k / 0.3))})`; rr(f.x, f.y, cs, cs, cs * 0.15); ctx.fill(); }
+    }
+    ctx.restore();
+    if (S.aim) {
+      const pulse = 0.5 + 0.5 * Math.sin(S.t * 6);
+      rr(bx - 9, by - 9, cs * N + 18, cs * N + 18, 18);
+      ctx.strokeStyle = `rgba(255,209,102,${alpha(0.5 + pulse * 0.5)})`; ctx.lineWidth = 4; ctx.stroke();
+      ctx.font = '800 15px Nunito, ui-rounded, system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const msg = `${BOOSTER_ICONS[S.aim.kind]} ${t(S.aim.kind === 'bomb' ? 'aimBomb' : 'aimHammer')}`;
+      const tw = ctx.measureText(msg).width + 24;
+      rr(W / 2 - tw / 2, by - 44, tw, 28, 14); ctx.fillStyle = 'rgba(20,50,36,0.9)'; ctx.fill();
+      ctx.fillStyle = '#ffe07a'; ctx.fillText(msg, W / 2, by - 30);
     }
     // tray
     for (let i = 0; i < 3; i++) {
@@ -479,6 +522,7 @@
 
   function enterPlay() {
     S.mode = 'play';
+    updateBoosters();
     $('toasts').innerHTML = '';
     showOnly('hud');
     layout();
@@ -499,7 +543,7 @@
     enterPlay();
   }
   function resetRun() {
-    Object.assign(S, { score: 0, streak: 0, miss: 0, pieces: 0, collected: {}, lines: 0, runSeeds: 0, drag: null, busy: false, run: newRun() });
+    Object.assign(S, { score: 0, streak: 0, miss: 0, pieces: 0, collected: {}, lines: 0, runSeeds: 0, drag: null, busy: false, aim: null, adContinued: false, run: newRun() });
     S.fx.length = 0; S.parts.length = 0; S.pops.length = 0;
     refillTray();
   }
@@ -599,7 +643,7 @@
     persist();
 
     if (S.kind === 'adventure' && goalMet()) return finish(true);
-    if (!S.tray.some((x) => x && fitsAnywhere(x))) finish(false);
+    if (!S.tray.some((x) => x && fitsAnywhere(x))) return outOfSpace();
     return undefined;
   }
 
@@ -613,21 +657,157 @@
   }
   function starsFor() { const par = S.cfg.par; return S.pieces <= par ? 3 : S.pieces <= par * 1.35 ? 2 : 1; }
 
-  const nextStep = () => save.garden.findIndex((v) => v < 0);
-  const canBuild = () => { const s = nextStep(); return s >= 0 && save.seeds >= TASKS[s].cost; };
+  const tasksOf = (gi) => GARDENS[gi].tasks;
+  const nextStep = () => builtOf(currentGarden()).findIndex((v) => v < 0);
+  const nextTask = () => { const st = nextStep(); return st < 0 ? null : tasksOf(currentGarden())[st]; };
+  const canBuild = () => { const task = nextTask(); return !!task && save.seeds >= task.cost; };
+  const adReady = () => Ads.rewardedLeft() > 0;
+
+  // ---------------------------------------------------------------- rescue when out of space
+  function outOfSpace() {
+    S.busy = true;
+    S.drag = null;
+    S.aim = null;
+    const b = save.boosters;
+    const opts = [];
+    if (b.shuffle > 0) opts.push(['useShuffle', b.shuffle, () => { closeRescue(); useShuffle(); }]);
+    if (b.bomb > 0) opts.push(['useBomb', b.bomb, () => { closeRescue(); startAim('bomb', true); }]);
+    if (!S.adContinued && adReady()) opts.push(['rescueAd', null, adContinue]);
+    if (!opts.length) return finish(false);
+    const box = $('rescueOpts');
+    box.innerHTML = '';
+    opts.forEach(([key, n, fn], i) => {
+      const btn = document.createElement('button');
+      btn.className = 'btn ' + (key === 'rescueAd' ? 'build wide' : i === 0 ? 'primary' : 'secondary');
+      btn.textContent = (key === 'rescueAd' ? '▶ ' : '') + t(key, { n });
+      btn.addEventListener('click', fn);
+      box.appendChild(btn);
+    });
+    Sound.fail();
+    $('rescue').classList.remove('hidden');
+    return undefined;
+  }
+  function closeRescue() { $('rescue').classList.add('hidden'); S.busy = false; }
+  async function adContinue() {
+    const ok = await Ads.showRewarded('continue');
+    if (!ok) { toast(adReady() ? t('adFailed') : t('noAdsLeft')); return; }
+    S.adContinued = true;
+    closeRescue();
+    // clear the fullest rows so there is room again
+    const rows = [...Array(N).keys()].sort((a, b) => S.grid[b].filter(Boolean).length - S.grid[a].filter(Boolean).length).slice(0, TUNING.continueRows);
+    const cells = [];
+    rows.forEach((r) => { for (let c = 0; c < N; c++) if (S.grid[r][c]) cells.push([r, c]); });
+    blast(cells, false);
+    refillTray();
+    Sound.build();
+    afterBoard();
+  }
+  // after a power-up or rescue changed the board: win, keep going, or rescue again
+  function afterBoard() {
+    updateHud();
+    persist();
+    if (S.kind === 'adventure' && goalMet()) return finish(true);
+    if (!S.tray.some((x) => x && fitsAnywhere(x))) return outOfSpace();
+    return undefined;
+  }
+
+  // ---------------------------------------------------------------- power-ups
+  // remove cells from the board with the clear effect; they count toward flower goals
+  function blast(cells, count = true) {
+    for (const [r, c] of cells) {
+      const cell = S.grid[r][c];
+      if (!cell) continue;
+      const x = bx + c * cs, y = by + r * cs;
+      S.fx.push({ x, y, ci: cell.ci, t: 0 });
+      for (let j = 0; j < 4; j++) S.parts.push({ x: x + cs / 2, y: y + cs / 2, vx: rand(-200, 200), vy: rand(-300, -60), s: rand(3, 7), color: COLORS[cell.ci], life: 0.7, max: 0.7 });
+      if (count) S.collected[cell.ci] = (S.collected[cell.ci] || 0) + 1;
+      S.grid[r][c] = null;
+    }
+  }
+  function startAim(kind, rescue = false) {
+    S.aim = { kind, rescue };
+    S.drag = null;
+    updateBoosters();
+  }
+  function cancelAim() {
+    const rescue = S.aim && S.aim.rescue;
+    S.aim = null;
+    updateBoosters();
+    if (rescue) outOfSpace();
+  }
+  function useAimAt(r, c) {
+    const kind = S.aim.kind;
+    let cells = [];
+    if (kind === 'hammer') { if (!S.grid[r][c]) return; cells = [[r, c]]; }
+    else for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const rr2 = r + dr, cc = c + dc; if (rr2 >= 0 && rr2 < N && cc >= 0 && cc < N && S.grid[rr2][cc]) cells.push([rr2, cc]); }
+    if (!cells.length) return;
+    save.boosters[kind]--;
+    S.aim = null;
+    blast(cells);
+    if (kind === 'bomb') { Sound.tone(90, 0.4, 'sawtooth', 0.25, 0, 40); vibrate([30, 40, 30]); S.shake = S.t; }
+    else { Sound.tone(300, 0.12, 'square', 0.12, 0, 120); vibrate(25); }
+    updateBoosters();
+    afterBoard();
+  }
+  function useShuffle() {
+    if (save.boosters.shuffle <= 0) return;
+    save.boosters.shuffle--;
+    refillTray();
+    Sound.pick(); Sound.bloom();
+    updateBoosters();
+    afterBoard();
+  }
+  async function tapBooster(kind) {
+    if (S.mode !== 'play' || S.busy) return;
+    Sound.init();
+    if (S.aim && S.aim.kind === kind) return cancelAim();
+    if (save.boosters[kind] <= 0) {
+      if (!adReady()) { toast(t('noAdsLeft')); return undefined; }
+      S.busy = true;
+      const ok = await Ads.showRewarded('booster');
+      S.busy = false;
+      if (!ok) return undefined;
+      save.boosters[kind]++;
+      persist();
+      toast(t('boosterGot', { name: t(kind) }));
+      updateBoosters();
+      return undefined;
+    }
+    if (kind === 'shuffle') return useShuffle();
+    return startAim(kind);
+  }
+  function giveBoosters(kinds) {
+    kinds.forEach((k) => { save.boosters[k] = (save.boosters[k] || 0) + 1; });
+    persist();
+  }
+  function updateBoosters() {
+    for (const k of BOOSTERS) {
+      const el = $('bst-' + k);
+      if (!el) continue;
+      const n = save.boosters[k] || 0;
+      el.querySelector('.cnt').textContent = n > 0 ? n : '▶+1';
+      el.classList.toggle('empty', n <= 0);
+      el.classList.toggle('active', !!(S.aim && S.aim.kind === k));
+    }
+  }
 
   function finish(won) {
     S.mode = 'over';
     S.busy = true;
     S.drag = null;
+    S.aim = null;
+    $('rescue').classList.add('hidden');
     const n = S.cfg.n;
     let stars = 0, best = false;
     if (S.kind === 'adventure' && won) {
       stars = starsFor();
       const first = !save.stars[n];
-      addSeeds(first ? 8 + stars * 4 : 2 + stars);
+      const [base, per] = first ? TUNING.winSeedsFirst : TUNING.winSeedsReplay;
+      addSeeds(base + per * stars);
       save.stars[n] = Math.max(save.stars[n] || 0, stars);
       if (save.level === n) save.level = n + 1;
+      // every hard level gives a set of power-ups the first time
+      if (first && S.cfg.hard) { giveBoosters(BOOSTERS); setTimeout(() => toast(t('allBoosters')), 900); }
     }
     if (S.kind === 'classic' && S.score > save.best) { save.best = S.score; best = true; }
     persist();
@@ -636,25 +816,52 @@
       $('resStars').innerHTML = S.kind === 'adventure' && won ? [1, 2, 3].map((i) => `<span class="${i <= stars ? '' : 'off'}">★</span>`).join('') : '';
       $('resScore').textContent = S.score;
       $('resSeeds').textContent = S.runSeeds ? t('seedsEarned', { n: S.runSeeds }) : '';
-      const step = nextStep();
-      $('resBuild').classList.toggle('hidden', !canBuild());
-      if (step >= 0) $('resBuild').textContent = t('buildNow', { task: t('task_' + TASKS[step].id) });
+      const dbl = $('resDouble');
+      dbl.classList.toggle('hidden', !(S.runSeeds > 0 && adReady()));
+      dbl.disabled = false;
+      dbl.textContent = '▶ ' + t('doubleSeeds');
+      refreshResBuild();
       if (S.kind === 'adventure') {
         $('resTitle').textContent = won ? t('levelComplete') : t('outOfSpace');
         $('resSub').textContent = won ? '' : t('outOfSpaceSub');
         $('resPrimary').textContent = won ? t('next') : t('retry');
-        $('resPrimary').onclick = () => (won ? startLevel(n + 1) : startLevel(n));
+        $('resPrimary').onclick = () => afterAd(() => (won ? startLevel(n + 1) : startLevel(n)));
       } else {
         $('resTitle').textContent = best ? t('newBest') : t('gameOver');
         $('resSub').textContent = t('best', { n: save.best });
         $('resPrimary').textContent = t('retry');
-        $('resPrimary').onclick = startClassic;
+        $('resPrimary').onclick = () => afterAd(startClassic);
       }
       $('resSub').classList.toggle('hidden', !$('resSub').textContent);
       $('resSecondary').textContent = t('garden');
       $('resSecondary').onclick = openHome;
       $('result').classList.remove('hidden');
     }, won ? 700 : 900);
+  }
+  function refreshResBuild() {
+    const task = nextTask();
+    $('resBuild').classList.toggle('hidden', !canBuild());
+    if (task) $('resBuild').textContent = t('buildNow', { task: t('task_' + task.id) });
+  }
+  async function doubleSeeds() {
+    const btn = $('resDouble');
+    btn.disabled = true;
+    const bonus = S.runSeeds;
+    const ok = await Ads.showRewarded('double');
+    if (!ok) { btn.disabled = false; toast(adReady() ? t('adFailed') : t('noAdsLeft')); return; }
+    addSeeds(bonus);
+    persist();
+    btn.classList.add('hidden');
+    $('resSeeds').textContent = t('doubled', { n: S.runSeeds });
+    Sound.bloom();
+    refreshResBuild();
+  }
+  // a rare interstitial between levels, never in the first minutes of play
+  let playSeconds = 0;
+  async function afterAd(next) {
+    $('result').classList.add('hidden');
+    await Ads.maybeInterstitial({ playSeconds });
+    next();
   }
 
   // ---------------------------------------------------------------- HUD
@@ -698,7 +905,7 @@
   }
 
   // ---------------------------------------------------------------- screens
-  const LAYERS = ['home', 'map', 'hud', 'intro', 'result', 'settings', 'build'];
+  const LAYERS = ['home', 'map', 'hud', 'intro', 'result', 'settings', 'build', 'rescue'];
   function showOnly(id) { LAYERS.forEach((l) => $(l).classList.toggle('hidden', l !== id)); }
   function openHome() {
     S.mode = 'home';
@@ -711,35 +918,41 @@
     $('playLbl').textContent = t('levelN', { n: save.level });
     $('classicSub').textContent = t('best', { n: save.best });
     $('levelsSub').textContent = `★ ${Object.values(save.stars).reduce((a, b) => a + b, 0)}`;
-    const step = nextStep(), done = TASKS.length - (step < 0 ? 0 : TASKS.filter((_, i) => save.garden[i] < 0).length);
-    $('chapterLbl').textContent = t('chapter', { a: done, b: TASKS.length });
-    $('welcome').classList.toggle('hidden', done > 0 || save.level > 2);
+    const cur = currentGarden(), vg = viewGarden();
+    // switch between gardens once a second one is unlocked
+    $('gnav').classList.toggle('hidden', cur === 0);
+    $('gName').textContent = gardenName(vg);
+    $('gPrev').disabled = vg <= 0;
+    $('gNext').disabled = vg >= cur;
+    const built = builtOf(vg), total = built.length, done = built.filter((v) => v >= 0).length;
+    $('chapterLbl').textContent = cur === 0 ? t('chapter', { name: gardenName(vg), a: done, b: total }) : `${done}/${total}`;
+    $('welcome').classList.toggle('hidden', done > 0 || save.level > 2 || vg > 0);
     const btn = $('buildBtn');
-    if (step < 0) {
-      $('taskName').textContent = t('gardenDone');
+    const task = vg === cur ? nextTask() : null;
+    if (!task) {
+      $('taskName').textContent = t('gardenDone', { name: gardenName(vg) });
       $('taskFill').style.width = '100%';
       btn.classList.add('hidden');
-      $('chapterLbl').textContent = t('comingSoon');
+      if (vg === GARDENS.length - 1) $('chapterLbl').textContent = t('comingSoon');
       measurePanel();
       return;
     }
-    const cost = TASKS[step].cost;
-    $('taskName').textContent = t('task_' + TASKS[step].id);
+    const cost = task.cost;
+    $('taskName').textContent = t('task_' + task.id);
     $('taskFill').style.width = `${Math.min(100, (save.seeds / cost) * 100)}%`;
     btn.classList.remove('hidden');
-    btn.textContent = `${Math.min(save.seeds, cost)}/${cost} 🌱`;
+    btn.textContent = save.seeds >= cost ? t('build') : `${Math.min(save.seeds, cost)}/${cost} 🌱`;
     btn.classList.toggle('ready', save.seeds >= cost);
-    if (save.seeds >= cost) btn.textContent = t('build');
     measurePanel();
   }
 
   let buildSel = 0;
   function openBuild() {
-    const step = nextStep();
-    if (step < 0) return;
-    const task = TASKS[step];
+    const gi = currentGarden(), step = nextStep(), task = nextTask();
+    if (!task) return;
+    save.view = gi;
     buildSel = 0;
-    $('buildChapter').textContent = t('chapter', { a: step, b: TASKS.length });
+    $('buildChapter').textContent = t('chapter', { name: gardenName(gi), a: step, b: tasksOf(gi).length });
     $('buildTitle').textContent = t('task_' + task.id);
     const box = $('buildOpts');
     box.innerHTML = '';
@@ -751,7 +964,7 @@
       c.width = cw * dpr; c.height = ch * dpr;
       const g = c.getContext('2d');
       g.scale(dpr, dpr);
-      Garden.preview(g, cw, ch, step, i, 1.2);
+      Garden.preview(g, cw, ch, gi, step, i, 1.2);
       b.appendChild(c);
       const lbl = document.createElement('span');
       lbl.textContent = tl('style_' + task.id, i);
@@ -770,10 +983,14 @@
     $('build').classList.remove('hidden');
   }
   function doBuild() {
-    const step = nextStep();
-    if (step < 0 || save.seeds < TASKS[step].cost) return;
-    save.seeds -= TASKS[step].cost;
-    save.garden[step] = buildSel;
+    const gi = currentGarden(), step = nextStep(), task = nextTask();
+    if (!task || save.seeds < task.cost) return;
+    save.seeds -= task.cost;
+    builtOf(gi)[step] = buildSel;
+    save.view = gi;
+    // every build step also hands out a power-up
+    const gift = BOOSTERS[step % BOOSTERS.length];
+    giveBoosters([gift]);
     persist();
     $('build').classList.add('hidden');
     S.appear = { task: step, start: S.t + 0.15 };
@@ -781,13 +998,25 @@
     Sound.build();
     vibrate([15, 40, 25]);
     // sparkles where the new piece appears
-    const a = Garden.anchor(homeView(), step);
+    const a = Garden.anchor(homeView(), gi, step);
     for (let i = 0; i < 36; i++) {
       const ang = rand(0, Math.PI * 2), sp = rand(60, 260);
       S.parts.push({ x: a.x, y: a.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 120, s: rand(3, 7), color: i % 3 ? COLORS[i % NC] : '#ffffff', life: 1.3, max: 1.3, petal: true });
     }
-    toast(t('built', { task: t('task_' + TASKS[step].id) }));
-    if (nextStep() < 0) setTimeout(() => toast(t('gardenDone')), 1200);
+    toast(`${t('built', { task: t('task_' + task.id) })} · ${BOOSTER_ICONS[gift]} +1`);
+    if (builtOf(gi).every((v) => v >= 0)) {
+      setTimeout(() => toast(t('gardenDone', { name: gardenName(gi) })), 1200);
+      if (gi + 1 < GARDENS.length) {
+        // move on to the next garden after the celebration
+        setTimeout(() => { save.view = gi + 1; persist(); if (S.mode === 'home') { toast(t('newGarden', { name: gardenName(gi + 1) })); refreshHome(); } }, 3200);
+      }
+    }
+    refreshHome();
+  }
+  function switchGarden(d) {
+    save.view = clamp(viewGarden() + d, 0, currentGarden());
+    S.appear = null;
+    persist();
     refreshHome();
   }
 
@@ -827,6 +1056,12 @@
   cv.addEventListener('pointerdown', (e) => {
     if (S.mode !== 'play' || S.busy || S.drag) return;
     Sound.init();
+    if (S.aim) {
+      const c = Math.floor((e.clientX - bx) / cs), r = Math.floor((e.clientY - by) / cs);
+      if (r >= 0 && r < N && c >= 0 && c < N) useAimAt(r, c); else cancelAim();
+      e.preventDefault();
+      return;
+    }
     for (let i = 0; i < 3; i++) {
       const sl = slots[i];
       if (S.tray[i] && e.clientX >= sl.x && e.clientX <= sl.x + sl.w && e.clientY >= sl.y - cs * 0.5 && e.clientY <= sl.y + sl.h) {
@@ -859,12 +1094,22 @@
   $('buildClose').addEventListener('click', () => $('build').classList.add('hidden'));
   $('resBuild').addEventListener('click', () => { openHome(); openBuild(); });
   $('mapBack').addEventListener('click', openHome);
+  BOOSTERS.forEach((k) => $('bst-' + k).addEventListener('click', () => tapBooster(k)));
+  $('gPrev').addEventListener('click', () => switchGarden(-1));
+  $('gNext').addEventListener('click', () => switchGarden(1));
+  $('resDouble').addEventListener('click', doubleSeeds);
+  $('rescueGiveUp').addEventListener('click', () => finish(false));
+  $('setNoAds').addEventListener('click', async () => {
+    if (Ads.noAds()) return;
+    if (await Ads.purchaseRemoveAds()) { toast(t('adsRemoved')); $('setNoAds').disabled = true; }
+  });
   $('hudBack').addEventListener('click', openHome);
   $('introStart').addEventListener('click', () => { $('intro').classList.add('hidden'); S.busy = false; Sound.init(); });
   $('settingsBtn').addEventListener('click', () => {
     $('setSound').checked = save.settings.sound;
     $('setVibe').checked = save.settings.vibe;
     $('setLang').value = save.settings.lang;
+    $('setNoAds').disabled = Ads.noAds();
     $('settings').classList.remove('hidden');
   });
   $('setClose').addEventListener('click', () => $('settings').classList.add('hidden'));
@@ -881,6 +1126,7 @@
     if (innerWidth !== W || innerHeight !== H) { layout(); if (S.mode === 'home') measurePanel(); }
     if (!W || !H) return;
     S.t += dt;
+    if (S.mode === 'play' && !S.busy) playSeconds += dt;
     for (let i = S.fx.length - 1; i >= 0; i--) { S.fx[i].t += dt; if (S.fx[i].t > 0.35) S.fx.splice(i, 1); }
     for (let i = S.parts.length - 1; i >= 0; i--) {
       const q = S.parts[i];
@@ -895,9 +1141,10 @@
   applyI18n();
   layout();
   openHome();
+  Ads.init();
   requestAnimationFrame(frame);
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
-  window.__bb = { S, save, startLevel, startClassic, place, fits, levelConfig, buildBoard, fitsAnywhere, geom: () => ({ cs, bx, by, slots }), pieceSize, openHome, openBuild, doBuild, persist };
+  window.__bb = { S, save, outOfSpace, tapBooster, useAimAt, switchGarden, startLevel, startClassic, place, fits, levelConfig, buildBoard, fitsAnywhere, geom: () => ({ cs, bx, by, slots }), pieceSize, openHome, openBuild, doBuild, persist };
 })();

@@ -27,6 +27,11 @@
   <div class="spacer"></div>
   <div class="home-bottom">
     <p class="welcome hidden" id="welcome" data-i18n="welcome"></p>
+    <div class="gnav hidden" id="gnav">
+      <button class="icon-btn small" id="gPrev" data-i18n-aria="back">‹</button>
+      <span id="gName"></span>
+      <button class="icon-btn small" id="gNext" aria-label="Next">›</button>
+    </div>
     <div class="task" id="taskCard">
       <div class="task-top">
         <div class="task-text">
@@ -65,6 +70,22 @@
     </div>
     <div class="goals" id="goals"></div>
   </header>
+  <div class="spacer"></div>
+  <nav class="boosters">
+    <button class="booster" id="bst-hammer"><span class="ico">🔨</span><span class="nm" data-i18n="hammer">Hammer</span><b class="cnt">0</b></button>
+    <button class="booster" id="bst-bomb"><span class="ico">💣</span><span class="nm" data-i18n="bomb">Bomb</span><b class="cnt">0</b></button>
+    <button class="booster" id="bst-shuffle"><span class="ico">🔄</span><span class="nm" data-i18n="shuffle">Shuffle</span><b class="cnt">0</b></button>
+  </nav>
+</section>
+
+<!-- RESCUE (out of space) -->
+<section id="rescue" class="layer modal hidden">
+  <div class="card">
+    <h2 data-i18n="outOfSpace">Out of space</h2>
+    <p class="sub" data-i18n="rescueSub"></p>
+    <div class="rescue-opts" id="rescueOpts"></div>
+    <button class="btn ghost" id="rescueGiveUp" data-i18n="giveUp">Give up</button>
+  </div>
 </section>
 
 <!-- LEVEL INTRO -->
@@ -87,6 +108,7 @@
     <p class="sub" id="resSub"></p>
     <div class="big-num" id="resScore"></div>
     <div class="seed-gain" id="resSeeds"></div>
+    <button class="btn secondary hidden" id="resDouble"></button>
     <button class="btn build wide hidden" id="resBuild"></button>
     <button class="btn primary" id="resPrimary"></button>
     <button class="btn ghost" id="resSecondary"></button>
@@ -115,6 +137,7 @@
     <label class="set-row"><span data-i18n="language">Language</span>
       <select id="setLang"><option value="en">English</option><option value="tr">Türkçe</option></select>
     </label>
+    <button class="btn secondary" id="setNoAds" data-i18n="removeAds">Remove ads</button>
     <button class="btn ghost" id="setClose" data-i18n="close">Close</button>
   </div>
 </section>
@@ -122,6 +145,7 @@
 <div id="toasts"></div>
 
 <script src="i18n.js"></script>
+<script src="ads.js"></script>
 <script src="garden.js"></script>
 <script src="game.js"></script>
 </body>
