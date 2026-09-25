@@ -85,13 +85,14 @@
   ];
   const LOOKAHEAD = Math.PI * 1.35;
 
+  // at: seviyeye geçmek için geçilmesi gereken engel sayısı (skor değil; kombolar skoru şişirdiği için)
   const LEVELS = [
     { at: 0,   bg1: '#141a3d', bg2: '#05060f', obs: '#ff3d6e', ring: '#8fa3ff', core: '#1d2658' },
-    { at: 15,  bg1: '#2a0f45', bg2: '#08030f', obs: '#ff9f1c', ring: '#c69bff', core: '#3a1766' },
-    { at: 35,  bg1: '#06343a', bg2: '#010a0c', obs: '#ff4d8d', ring: '#6ff7e8', core: '#0b4a52', rings: 3, msg: t('lvl.rings3') },
-    { at: 60,  bg1: '#3d0a16', bg2: '#0b0204', obs: '#ffd23f', ring: '#ff8fa6', core: '#5a1222', breath: true, msg: t('lvl.breath') },
-    { at: 90,  bg1: '#0f3a12', bg2: '#020a02', obs: '#ff5ef0', ring: '#9dff8f', core: '#15521b', rings: 4, msg: t('lvl.rings4') },
-    { at: 130, bg1: '#1a1a1a', bg2: '#000000', obs: '#ffffff', ring: '#ff3d6e', core: '#2a2a2a' },
+    { at: 10,  bg1: '#2a0f45', bg2: '#08030f', obs: '#ff9f1c', ring: '#c69bff', core: '#3a1766' },
+    { at: 18,  bg1: '#06343a', bg2: '#010a0c', obs: '#ff4d8d', ring: '#6ff7e8', core: '#0b4a52', rings: 3, msg: t('lvl.rings3') },
+    { at: 42,  bg1: '#3d0a16', bg2: '#0b0204', obs: '#ffd23f', ring: '#ff8fa6', core: '#5a1222', breath: true, msg: t('lvl.breath') },
+    { at: 68,  bg1: '#0f3a12', bg2: '#020a02', obs: '#ff5ef0', ring: '#9dff8f', core: '#15521b', rings: 4, msg: t('lvl.rings4') },
+    { at: 110, bg1: '#1a1a1a', bg2: '#000000', obs: '#ffffff', ring: '#ff3d6e', core: '#2a2a2a' },
   ].map((l) => ({ ...l, bg1: hex(l.bg1), bg2: hex(l.bg2), obs: hex(l.obs), ring: hex(l.ring), core: hex(l.core) }));
 
   // Halka sayısına göre iç/dış yarıçap (M'nin katı olarak)
@@ -332,11 +333,25 @@
   }
 
   // ---------------------------------------------------------------- engel üretimi
+  // Evreler: halka sayısı değişince hız bir miktar düşer (nefes payı), evre içinde tekrar artar.
+  // start: evre başı hız, rate: engel başına artış, cap: evre tavanı, gap: engel aralığı (sn), gapMin: en dar aralık
+  const PHASES = {
+    2: { start: 1.6, rate: 0.022, cap: 2.25, gap: 0.8, gapRate: 0.007, gapMin: 0.46 },
+    3: { start: 1.5, rate: 0.009, cap: 2.45, gap: 0.98, gapRate: 0.0035, gapMin: 0.54 },
+    4: { start: 1.45, rate: 0.007, cap: 2.65, gap: 1.08, gapRate: 0.0028, gapMin: 0.6 },
+  };
   function difficulty() { return S.passed; }
-  function omegaTarget() { return Math.min(OMEGA_MAX, S.omegaStart + difficulty() * 0.014); }
+  const phase = () => PHASES[S.ringCount] || PHASES[2];
+  const phaseProgress = () => Math.max(0, S.passed - S.phaseStart);
+  function omegaTarget() {
+    const ph = phase();
+    const base = S.mod === 'fast' ? ph.start + 0.4 : ph.start;
+    return Math.min(OMEGA_MAX, ph.cap + (S.mod === 'fast' ? 0.4 : 0), base + phaseProgress() * ph.rate);
+  }
   function gapAngle(mult = 1) {
     const w = omegaTarget();
-    const tGap = Math.max(0.36, 0.8 - difficulty() * 0.0035);
+    const ph = phase();
+    const tGap = Math.max(ph.gapMin, ph.gap - phaseProgress() * ph.gapRate);
     const minA = 2 * ((OBS_L + BALL_R + OBS_T * 0.5) / innerR()) + w * SWITCH_T * 1.6;
     return Math.max(minA, w * tGap * mult);
   }
@@ -499,8 +514,10 @@
     S.items.length = 0;
     if (ch) S.tutorial = false;
     S.omegaStart = S.mod === 'fast' ? 2.1 : OMEGA_START;
-    S.omega = S.speed = S.omegaStart;
     if (S.mod === 'rings3') { S.ringCount = 3; S.ring = 2; S.dir = -1; }
+    S.phaseStart = 0;
+    S.introSlow = 0;
+    S.omega = S.speed = omegaTarget();
     S.radius = S.from = ringR(S.ring);
     if (boostReady && !ch) {
       boostReady = false;
@@ -570,7 +587,7 @@
       for (let i = 0; i < 3; i++) burst(CX + rand(-80, 80), CY - outerR() - 30, `hsl(${rand(0, 360)},100%,65%)`, 16, 300, 3, 1);
     }
     const next = LEVELS[S.levelIdx + 1];
-    if (next && S.score >= next.at) {
+    if (next && S.passed >= next.at) {
       S.levelIdx++;
       popup(t('pop.level', { n: S.levelIdx + 1 }), CX, CY + outerR() + 44, '#fff', 28, 1.6);
       if (next.msg) popup(next.msg, CX, CY + outerR() + 76, rgba(next.ring), 17, 2.6);
@@ -787,9 +804,11 @@
       S.ringCount = S.pendingRings;
       S.pendingRings = 0;
       S.ringAnim = 0;
+      S.phaseStart = S.passed;
+      S.introSlow = 4;   // yeni halkayı öğrenmek için birkaç saniye yavaş çekim
       if (S.ring < S.ringCount - 1 && S.ring > 0) { /* yön korunur */ } else if (S.ring === 0) S.dir = 1;
       else S.dir = -1;
-      S.dirHint = 4;
+      S.dirHint = 6;
       S.flash = 0.6;
       S.shake = 5;
       Sound.level();
@@ -810,7 +829,8 @@
     CORE_R = Math.min(R_IN * 0.58, innerR() * 0.72);
     for (const t in S.pw) S.pw[t] = Math.max(0, S.pw[t] - dt);
     S.invuln = Math.max(0, S.invuln - dt);
-    S.slowF += ((S.pw.slow > 0 ? 0.6 : 1) - S.slowF) * Math.min(1, dt * 4);
+    if (S.ringAnim >= 1) S.introSlow = Math.max(0, (S.introSlow || 0) - dt);
+    S.slowF += ((S.pw.slow > 0 || S.introSlow > 0 ? 0.6 : 1) - S.slowF) * Math.min(1, dt * 4);
     S.omega += (omegaTarget() - S.omega) * Math.min(1, dt * 2);
     S.speed = S.omega * S.slowF;
     S.runT += dt;
@@ -965,6 +985,31 @@
     ctx.restore();
   }
 
+  // Bir sonraki dokunuşta gidilecek halkayı önden parlatır ve iniş noktasına hayalet top koyar
+  function drawTargetPreview() {
+    const target = Math.max(0, Math.min(S.ringCount - 1, S.ring + S.dir));
+    if (target === S.ring) return;
+    const r = ringR(target);
+    const col = ballColor();
+    const pulse = 0.5 + 0.5 * Math.sin(S.time * 7);
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = col;
+    // topun önündeki kısa yay: hedef halka boyunca
+    for (let k = 0; k < 6; k++) {
+      ctx.globalAlpha = (0.9 - k * 0.13) * (0.75 + 0.25 * pulse);
+      ctx.lineWidth = 5;
+      arc(r, S.angle + k * 0.14, S.angle + k * 0.14 + 0.1);
+      ctx.stroke();
+    }
+    // hayalet top
+    const [gx, gy] = polar(S.angle, r);
+    ctx.globalAlpha = 0.6 + 0.35 * pulse;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(gx, gy, BALL_R * 0.95, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
+
   // Topun yanında bir sonraki dokunuşun yönünü gösteren ok (gel-git kontrolü)
   function drawDirArrow(col) {
     const a = S.angle;
@@ -974,9 +1019,9 @@
     const x = CX + Math.cos(a) * r, y = CY + Math.sin(a) * r;
     const ux = Math.cos(a) * S.dir, uy = Math.sin(a) * S.dir;   // ok yönü
     const px = -uy, py = ux;                                     // dik
-    const s = BALL_R * 0.75;
+    const s = BALL_R * 0.95;
     ctx.fillStyle = col;
-    ctx.globalAlpha = 0.75 + 0.25 * pulse;
+    ctx.globalAlpha = 0.85 + 0.15 * pulse;
     ctx.beginPath();
     ctx.moveTo(x + ux * s, y + uy * s);
     ctx.lineTo(x - ux * s * 0.4 + px * s * 0.8, y - uy * s * 0.4 + py * s * 0.8);
@@ -1071,6 +1116,9 @@
       arc(ringR(i), 0, TAU);
       ctx.stroke();
     }
+
+    // hedef halka önizlemesi (3+ halkada gel-git kontrolünü anlaşılır kılar)
+    if (S.ringCount > 2 && S.mode === 'play' && S.ringAnim >= 1) drawTargetPreview();
 
     // çekirdek
     const kick = 1 + S.coreKick * 0.08 + Math.sin(S.time * 3) * 0.015;
@@ -1265,7 +1313,7 @@
     }
 
     if (S.mode === 'play' && S.dirHint > 0 && S.ringAnim >= 1) {
-      const y = CY + outerR() + 100;
+      const y = CY - outerR() - 64;   // halkaların üstünde; altta kalkan göstergesi var
       ctx.textAlign = 'center';
       ctx.globalAlpha = Math.min(1, S.dirHint);
       ctx.fillStyle = '#fff';
