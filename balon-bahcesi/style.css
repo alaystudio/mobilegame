@@ -179,6 +179,52 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 }
 @keyframes breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 
+/* tempo */
+.tempo {
+  align-self: center;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.tempo input { width: 150px; accent-color: var(--accent); touch-action: pan-x; }
+
+/* unlocks */
+.btn.unlock {
+  width: 100%;
+  padding: 13px 10px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid rgba(236, 208, 143, 0.7);
+  color: var(--gold);
+  font-size: 15px;
+  font-weight: 600;
+}
+.unlock-progress { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.unlock-progress .bar { display: block; height: 3px; border-radius: 9px; background: rgba(243, 238, 230, 0.1); margin-top: 6px; overflow: hidden; }
+.unlock-progress .bar i { display: block; height: 100%; background: var(--gold); }
+.unlock-chip {
+  appearance: none;
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid rgba(236, 208, 143, 0.5);
+  background: rgba(236, 208, 143, 0.06);
+  color: var(--gold);
+  border-radius: 14px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+.unlock-chip .eyebrow { color: var(--gold); opacity: 0.8; }
+
 /* ---------- Song complete ---------- */
 .modal { justify-content: center; align-items: center; background: rgba(12, 14, 32, 0.35); pointer-events: auto; animation: fade 0.5s ease; }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }

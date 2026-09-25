@@ -42,6 +42,7 @@
       <div class="next-title" id="nextTitle"></div>
       <div class="next-origin" id="nextOrigin"></div>
       <button class="btn primary" id="playBtn"><svg><use href="#i-play"/></svg><span data-i18n="play">Play</span></button>
+      <button class="unlock-chip hidden" id="homeUnlock"><span class="eyebrow" data-i18n="newSongReady">New song ready</span><span id="homeUnlockText"></span></button>
     </div>
     <nav class="nav">
       <button class="nav-btn glass" id="songsBtn"><svg><use href="#i-music"/></svg><span data-i18n="songs">Songs</span></button>
@@ -60,6 +61,11 @@
       <div class="progress"><div id="progressFill"></div></div>
     </div>
   </header>
+  <label class="tempo glass" for="tempo">
+    <span data-i18n="slow">Slow</span>
+    <input type="range" id="tempo" min="0.5" max="1.8" step="0.1" data-i18n-aria="tempo">
+    <span data-i18n="fast">Fast</span>
+  </label>
   <div class="hint hidden" id="hint"></div>
 </section>
 
@@ -73,6 +79,8 @@
       <div><canvas id="doneBloom" width="96" height="96"></canvas><span id="doneBloomText"></span></div>
     </div>
     <p class="break-note hidden" id="breakNote"></p>
+    <button class="btn unlock hidden" id="unlockBtn"></button>
+    <p class="unlock-progress hidden" id="unlockProgress"></p>
     <button class="btn primary" id="againBtn"></button>
     <button class="btn quiet" id="homeBtn" data-i18n="backToGarden">Back to garden</button>
   </div>

@@ -24,6 +24,8 @@ Yetişkinler için sakin, odak dostu bir müzik oyunu. Alacakaranlıkta parlayan
 
 Her şarkının altında, şarkının tonunda kısık bir **drone** (kök + beşli) çalar. Tek notalar bile dolu duyulur.
 
+**Tempo çubuğu:** Oyun ekranında Slow ↔ Fast (0.5×–1.8×). Balonların yükselme ve doğma hızını belirler, seçim kaydedilir.
+
 ## Tasarım ilkeleri
 - Kaybetmek, süre, seri cezası, gerçek zamanlı bekleme yok.
 - Her şarkının doğal bir sonu var ("zaman körlüğüne" karşı).
@@ -36,9 +38,14 @@ Her şarkının altında, şarkının tonunda kısık bir **drone** (kök + beş
 - **Balonlar = enstrümanlar:** Cam Küre/Piyano (ücretsiz), Sabun Köpüğü/Müzik kutusu 25, Sis/Sıcak synth 40, Dilek Feneri/Marimba 60, Ay Denizanası/Arp 80.
 - **Bahçe:** Ateşböcekleri 15, Söğüt 30, Cırcırböcekleri 35 🔊, Dere 45 🔊, Rüzgâr Çanı 50 🔊, Ay Göleti 60, Taş Fenerler 75, Kutup Işığı 100. 🔊 işaretliler bahçeye ses de ekler.
 
-## Şarkılar (13)
+## Şarkılar (25)
 Ücretsiz: Ode to Joy, Amazing Grace, Scarborough Fair.
-Yıldızla: Evening Waltz (özgün), Morning Mood (Grieg), Minuet in G (Petzold), Rain on Glass (özgün), Going Home (Dvořák), Greensleeves, Für Elise, Canon (Pachelbel), Brahms' Lullaby, Auld Lang Syne.
+Yıldızla (15–60 ✦): Evening Waltz, Paper Lanterns, Morning Mood, Minuet in G, Silent Night, Rain on Glass, Going Home, Low Tide, Greensleeves, Prelude in C, Eine kleine Nachtmusik, Für Elise, Canon, First Snow, Brahms' Lullaby, Auld Lang Syne, Jesu Joy of Man's Desiring, Moonlight Sonata, Night Train, Rondo alla Turca, The Blue Danube, In the Hall of the Mountain King.
+Özgün besteler: Evening Waltz, Paper Lanterns, Rain on Glass, Low Tide, First Snow, Night Train.
+
+**Şarkı açma akışı:**
+- Şarkı bitince açılmamış en ucuz şarkı gösterilir. Yıldız yetiyorsa "Unlock & play" butonu çıkar. Yetmiyorsa "Evening Waltz: 8 of 15 stars" ve bir ilerleme çubuğu görünür.
+- Sahip olunan tüm şarkılar en az bir kez çalınmışsa ve yıldız yetiyorsa ana ekranda "New song ready" kartı çıkar.
 Hepsi kamu malı ya da özgün. Melodiler kulakla kontrol edilmeli; yanlış nota varsa `songs.js`'te düzeltilir.
 
 ## Sonraki adımlar

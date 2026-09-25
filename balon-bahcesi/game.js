@@ -38,7 +38,7 @@
     blooms: [],
     next: 'ode',
     tutorial: true,
-    settings: { lang: 'en', vol: 80, amb: true, vibe: true, calm: reduceMotion, guide: true, mode: 'order', breakMin: 15 },
+    settings: { lang: 'en', tempo: 1, vol: 80, amb: true, vibe: true, calm: reduceMotion, guide: true, mode: 'order', breakMin: 15 },
   };
   const save = (() => {
     try {
@@ -315,6 +315,18 @@
   }
   const homeGround = () => clamp(panelTop - 150 * U, H * 0.36, H * 0.58);
   const inOrder = () => save.settings.mode !== 'any';
+  const tempo = () => clamp(Number(save.settings.tempo) || 1, 0.5, 1.8);
+
+  // cheapest song not yet unlocked: offered after a song and on the home screen
+  const nextLocked = () => SONGS.filter((s) => !owns('songs', s.id)).sort((a, b) => a.price - b.price)[0];
+  const allOwnedPlayed = () => SONGS.every((s) => !owns('songs', s.id) || save.plays[s.id]);
+  function unlockAndPlay(song) {
+    if (!song || !spend(song.price, L(song.name))) return;
+    save.songs.push(song.id);
+    save.next = song.id;
+    persist();
+    startSong(song);
+  }
 
   // ---------------------------------------------------------------- flow
   function nextOwnedSong(afterId) {
@@ -336,6 +348,7 @@
     $('done').classList.add('hidden');
     $('playUi').classList.remove('hidden');
     $('songName').textContent = L(song.name);
+    $('tempo').value = tempo();
     $('hint').textContent = t(inOrder() ? 'hintOrder' : 'hintAny');
     $('hint').classList.toggle('hidden', !save.tutorial);
     updateProgress();
@@ -430,6 +443,19 @@
     $('breakNote').classList.toggle('hidden', !brk);
     if (brk) { $('breakNote').textContent = t('breakNote', { min: mins }); S.sessionStart = Date.now(); }
     $('againBtn').textContent = t('nextSong', { name: L(songById(save.next).name) });
+    const lock = nextLocked();
+    const canBuy = lock && save.stars >= lock.price;
+    $('unlockBtn').classList.toggle('hidden', !canBuy);
+    $('unlockProgress').classList.toggle('hidden', !lock || canBuy);
+    if (canBuy) $('unlockBtn').textContent = `${t('unlockPlay', { name: L(lock.name) })} · ✦ ${lock.price}`;
+    else if (lock) {
+      $('unlockProgress').innerHTML = '';
+      $('unlockProgress').append(t('unlockProgress', { name: L(lock.name), have: save.stars, price: lock.price }));
+      const bar = document.createElement('span');
+      bar.className = 'bar';
+      bar.innerHTML = `<i style="width:${Math.min(100, (save.stars / lock.price) * 100)}%"></i>`;
+      $('unlockProgress').appendChild(bar);
+    }
     setTimeout(() => {
       if (S.mode !== 'finale') return;
       S.mode = 'done';
@@ -465,13 +491,13 @@
       const ready = S.spawnT <= 0 || pending < 3;
       if (ready && pending < 7 && (pending === 0 || lowest < H + 10 * U)) {
         spawnBalloon();
-        S.spawnT = calm() ? 0.8 : 0.55;
+        S.spawnT = (calm() ? 0.8 : 0.55) / tempo();
       }
       if (S.idleT > 7 && S.idx < 5) $('hint').classList.remove('hidden');
     }
 
     const fin = S.mode !== 'play';
-    const speed = (calm() ? 26 : 38) * U;
+    const speed = (calm() ? 26 : 38) * U * tempo();
     const hy = hoverY(), gap = queueGap();
     for (let i = S.balloons.length - 1; i >= 0; i--) {
       const b = S.balloons[i];
@@ -863,6 +889,10 @@
     const s = songById(save.next);
     $('nextTitle').textContent = L(s.name);
     $('nextOrigin').textContent = L(s.origin);
+    const lock = nextLocked();
+    const ready = lock && allOwnedPlayed() && save.stars >= lock.price;
+    $('homeUnlock').classList.toggle('hidden', !ready);
+    if (ready) $('homeUnlockText').textContent = `${L(lock.name)} · ✦ ${lock.price}`;
   }
 
   function spend(price, name) {
@@ -978,6 +1008,10 @@
 
   $('playBtn').addEventListener('click', () => startSong(songById(save.next)));
   $('againBtn').addEventListener('click', () => startSong(songById(save.next)));
+  $('unlockBtn').addEventListener('click', () => unlockAndPlay(nextLocked()));
+  $('homeUnlock').addEventListener('click', () => unlockAndPlay(nextLocked()));
+  $('tempo').addEventListener('input', (e) => { save.settings.tempo = Number(e.target.value); persist(); });
+  $('tempo').addEventListener('pointerdown', (e) => e.stopPropagation());
   $('homeBtn').addEventListener('click', goHome);
   $('quitBtn').addEventListener('click', goHome);
   $('songsBtn').addEventListener('click', () => openSheet('songs', renderSongs));

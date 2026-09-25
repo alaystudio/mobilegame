@@ -49,6 +49,12 @@ window.DRIFT_I18N = {
     breakReminderSub: 'A gentle nudge after a while',
     off: 'Off',
     minutes: '{n} min',
+    tempo: 'Tempo',
+    slow: 'Slow',
+    fast: 'Fast',
+    unlockPlay: 'Unlock & play {name}',
+    unlockProgress: '{name}: {have} of {price} stars',
+    newSongReady: 'New song ready',
     disclaimer: 'Drift Garden is designed for relaxation. It is not a medical treatment.',
   },
 };
