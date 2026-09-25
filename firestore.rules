@@ -1,0 +1,18 @@
+rules_version = '2';
+// Orbitap sıralama tablosu: herkes okuyabilir, yazılan kayıt sıkı biçimde doğrulanır.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{col}/{pid} {
+      allow read: if col == 'scores_all' || col.matches('scores_daily-[0-9]{4}-[0-9]{2}-[0-9]{2}');
+      allow write: if (col == 'scores_all' || col.matches('scores_daily-[0-9]{4}-[0-9]{2}-[0-9]{2}'))
+        && pid.matches('p[a-z0-9]{1,16}')
+        && request.resource.data.keys().hasOnly(['name', 'score', 'ts'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 14
+        && request.resource.data.score is int
+        && request.resource.data.score >= 0
+        && request.resource.data.score < 100000;
+    }
+  }
+}

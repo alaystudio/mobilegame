@@ -6,7 +6,7 @@
  */
 window.YORUNGE_CONFIG = {
   firebase: {
-    apiKey: '',
-    projectId: '',
+    apiKey: 'AIzaSyCJ46SpVzkbLGeDQ7qBtMH4TSz5fBvL7iQ',
+    projectId: 'orbitap-game',
   },
 };
