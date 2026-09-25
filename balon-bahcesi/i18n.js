@@ -15,6 +15,8 @@ window.DRIFT_I18N = {
     backToGarden: 'Back to garden',
     hintOrder: 'Pop the balloons in the order they rise.\nThe glowing one is next.',
     hintAny: 'Tap any balloon to play the next note.',
+    startOrder: 'Tap the glowing balloon to begin',
+    startAny: 'Tap a balloon to begin',
     songComplete: 'Song complete',
     starsLabel: 'stars',
     newBloom: 'a new bloom in your garden',

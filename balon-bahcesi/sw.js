@@ -1,5 +1,5 @@
 // Önbellek sürümünü her yayında artır ki oyuncular yeni sürümü alsın.
-const CACHE = 'drift-v3';
+const CACHE = 'drift-v4';
 const ASSETS = [
   './',
   './index.html',

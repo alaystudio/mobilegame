@@ -349,8 +349,9 @@
     $('playUi').classList.remove('hidden');
     $('songName').textContent = L(song.name);
     $('tempo').value = tempo();
-    $('hint').textContent = t(inOrder() ? 'hintOrder' : 'hintAny');
-    $('hint').classList.toggle('hidden', !save.tutorial);
+    // every song opens with a clear prompt until the first note is played
+    $('hint').textContent = save.tutorial ? t(inOrder() ? 'hintOrder' : 'hintAny') : t(inOrder() ? 'startOrder' : 'startAny');
+    $('hint').classList.remove('hidden');
     updateProgress();
   }
 
@@ -402,7 +403,8 @@
     }
     S.idx++;
     S.idleT = 0;
-    if (save.tutorial && S.idx >= 5) { save.tutorial = false; persist(); $('hint').classList.add('hidden'); }
+    if (!save.tutorial || S.idx >= 5) $('hint').classList.add('hidden');
+    if (save.tutorial && S.idx >= 5) { save.tutorial = false; persist(); }
     updateProgress();
     if (S.idx >= S.song.midi.length) finishSong();
   }
@@ -493,7 +495,10 @@
         spawnBalloon();
         S.spawnT = (calm() ? 0.8 : 0.55) / tempo();
       }
-      if (S.idleT > 7 && S.idx < 5) $('hint').classList.remove('hidden');
+      if (S.idleT > 7 && S.idx > 0 && $('hint').classList.contains('hidden')) {
+        $('hint').textContent = t(inOrder() ? 'hintOrder' : 'hintAny');
+        $('hint').classList.remove('hidden');
+      }
     }
 
     const fin = S.mode !== 'play';
@@ -822,8 +827,8 @@
     for (const b of S.balloons) {
       const age = Math.min(1, (S.t - b.born) / 0.5);
       const wx = b.wob ? Math.sin(S.t * 50) * 4 * U * (b.wob / 0.4) : 0;
-      if (guide && b.n === S.idx) {
-        const p = 0.5 + 0.5 * Math.sin(S.t * 3);
+      if ((guide || S.idx === 0) && b.n === S.idx && S.mode === 'play') {
+        const p = 0.5 + 0.5 * Math.sin(S.t * 3) + (S.idx === 0 ? 0.5 : 0);
         ctx.strokeStyle = `rgba(244,234,210,${0.25 + 0.3 * p + (b.pulse || 0) * 0.4})`;
         ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(b.x + wx, b.y, b.r * (1.3 + 0.06 * p + (b.pulse || 0) * 0.3), 0, TAU); ctx.stroke();
