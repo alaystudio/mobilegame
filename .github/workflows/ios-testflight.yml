@@ -31,6 +31,13 @@ jobs:
           npm run build
           npx cap sync ios
 
+      - name: Secret kontrolü
+        run: |
+          for v in TEAM KEY_ID ISSUER; do
+            if [ -z "${!v}" ]; then echo "::error::$v secret'ı boş"; else echo "$v tanımlı"; fi
+          done
+          if [ -z "${{ secrets.ASC_KEY_P8 }}" ]; then echo "::error::ASC_KEY_P8 secret'ı boş"; else echo "ASC_KEY_P8 tanımlı"; fi
+
       - name: App Store Connect API anahtarını yaz
         run: |
           mkdir -p "$RUNNER_TEMP/keys"
@@ -38,6 +45,7 @@ jobs:
 
       - name: Arşivle (otomatik imzalama)
         run: |
+          set -o pipefail
           xcodebuild archive \
             -project ios/App/App.xcodeproj \
             -scheme App \
@@ -50,10 +58,11 @@ jobs:
             -authenticationKeyIssuerID "$ISSUER" \
             DEVELOPMENT_TEAM="$TEAM" \
             CODE_SIGN_STYLE=Automatic \
-            CURRENT_PROJECT_VERSION=${{ github.run_number }}
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} 2>&1 | tee "$RUNNER_TEMP/archive.log"
 
       - name: Dışa aktar ve App Store Connect'e yükle
         run: |
+          set -o pipefail
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -75,7 +84,16 @@ jobs:
             -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8" \
             -authenticationKeyID "$KEY_ID" \
-            -authenticationKeyIssuerID "$ISSUER"
+            -authenticationKeyIssuerID "$ISSUER" 2>&1 | tee "$RUNNER_TEMP/export.log"
+
+      - name: Hata özetini göster
+        if: failure()
+        run: |
+          # Loglar giriş yapmadan görünmediği için hata satırlarını açık notlara (annotation) yaz
+          cat "$RUNNER_TEMP"/*.log 2>/dev/null \
+            | grep -E "error:|Error Domain|No Account|No profiles|requires a development team|not found|Signing|provisioning" \
+            | grep -v "^\s*$" | sort -u | head -15 \
+            | while IFS= read -r l; do echo "::error::$l"; done
 
       - name: Anahtarı sil
         if: always()
