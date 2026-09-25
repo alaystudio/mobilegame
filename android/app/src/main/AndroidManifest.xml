@@ -21,10 +21,10 @@
             </intent-filter>
         </activity>
 
-        <!-- AdMob uygulama kimliği. Şimdilik Google'ın TEST kimliği: yayından önce AdMob'daki gerçek Android uygulama kimliğiyle değiştir. -->
+        <!-- AdMob uygulama kimliği (Orbitap Android) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"
+            android:value="ca-app-pub-4611251963734836~2190075218"
         />
 
         <provider

@@ -61,9 +61,9 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<!-- AdMob uygulama kimliği. Şimdilik Google'ın TEST kimliği: yayından önce AdMob'daki gerçek iOS uygulama kimliğiyle değiştir. -->
+	<!-- AdMob uygulama kimliği (Orbitap iOS) -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-4611251963734836~2364325875</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Bu izin, sana daha ilgili reklamlar göstermek için kullanılır. / This permission is used to show you more relevant ads.</string>
 	<!-- Google'ın SKAdNetwork kimliği. Diğer reklam ağlarının listesi için: developers.google.com/admob/ios/3p-skadnetworks -->

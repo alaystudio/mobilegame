@@ -179,13 +179,15 @@ No account or login is required. All ads are optional rewarded ads that the play
 ## Yayından önce kontrol listesi
 
 **Kodda değişecekler** (hepsi test değerleriyle çalışıyor, gerçek değerler senden gelecek)
-- [ ] `ads.js` → `CONFIG.admob.android` ve `CONFIG.admob.ios` içine gerçek ödüllü reklam birimi ID'leri, `testing: false`
-- [ ] `android/app/src/main/AndroidManifest.xml` → `com.google.android.gms.ads.APPLICATION_ID` gerçek Android uygulama kimliği
-- [ ] `ios/App/App/Info.plist` → `GADApplicationIdentifier` gerçek iOS uygulama kimliği
+- [x] `ads.js` → gerçek ödüllü reklam birimi ID'leri girildi
+- [ ] `ads.js` → cihaz testlerinden sonra `testing: false`
+- [x] `android/app/src/main/AndroidManifest.xml` → AdMob Android uygulama kimliği
+- [x] `ios/App/App/Info.plist` → AdMob iOS uygulama kimliği
 - [ ] `ios/App/App/Info.plist` → `SKAdNetworkItems` listesini Google'ın güncel listesiyle tamamla
 - [ ] `config.js` → Firebase `apiKey` ve `projectId`
 - [ ] `privacy.html` → iletişim e-postası (`destek@ALAN-ADINIZ` ve `support@YOUR-DOMAIN`)
-- [ ] `app-ads.txt` → AdMob yayıncı kimliği; dosyayı geliştirici web sitesinin **kök** alan adında yayınla
+- [x] `app-ads.txt` → AdMob yayıncı kimliği girildi
+- [ ] `app-ads.txt` dosyasını geliştirici web sitesinin **kök** alan adında yayınla
 
 **Panellerde**
 - [ ] AdMob: iki uygulama + ödüllü reklam birimleri, GDPR mesajı ve IDFA açıklama mesajı yayında

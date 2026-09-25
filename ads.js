@@ -26,16 +26,18 @@
     // Uygulama içi satın alma (StoreKit / Play Billing) bağlanana kadar "Reklamları kaldır" gizli
     removeAdsEnabled: false,
     admob: {
-      // Google'ın resmi TEST reklam birimleri. Yayından önce AdMob panelindeki gerçek ID'lerle değiştir
-      // ve testing: false yap. (Uygulama ID'leri ayrıca AndroidManifest.xml ve Info.plist içinde.)
+      // Orbitap'in AdMob reklam birimleri. (Uygulama ID'leri AndroidManifest.xml ve Info.plist içinde.)
+      // Geçiş reklamı 1.0'da kapalı; açılacaksa AdMob'da birim oluşturup interstitialId'leri değiştir.
       android: {
-        rewardedId: 'ca-app-pub-3940256099942544/5224354917',
+        rewardedId: 'ca-app-pub-4611251963734836/4263730904',
         interstitialId: 'ca-app-pub-3940256099942544/1033173712',
       },
       ios: {
-        rewardedId: 'ca-app-pub-3940256099942544/1712485313',
+        rewardedId: 'ca-app-pub-4611251963734836/5937748530',
         interstitialId: 'ca-app-pub-3940256099942544/4411468910',
       },
+      // true iken eklenti gerçek birimler yerine Google'ın test reklamlarını gösterir.
+      // Cihaz testleri bitince, mağazaya göndermeden hemen önce false yap.
       testing: true,
     },
   };
