@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#16204a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Drag blocks, clear lines, and travel through a thousand levels.">
+<title>Block Journey</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<!-- HOME -->
+<section id="home" class="layer center">
+  <button class="icon-btn corner" id="settingsBtn" data-i18n-aria="settings">⚙</button>
+  <div class="logo">
+    <div class="logo-blocks"><i></i><i></i><i></i><i></i></div>
+    <h1 data-i18n="appName">Block Journey</h1>
+  </div>
+  <div class="home-actions">
+    <button class="btn primary big" id="advBtn"><span data-i18n="adventure">Adventure</span><small id="advSub"></small></button>
+    <button class="btn secondary big" id="classicBtn"><span data-i18n="classic">Classic</span><small id="classicSub"></small></button>
+  </div>
+</section>
+
+<!-- MAP -->
+<section id="map" class="layer hidden">
+  <header class="bar">
+    <button class="icon-btn" id="mapBack" data-i18n-aria="back">‹</button>
+    <h2 data-i18n="adventure">Adventure</h2>
+    <div class="pill">★ <span id="mapStars">0</span></div>
+  </header>
+  <div class="map-scroll" id="mapScroll"><ol class="path" id="path"></ol></div>
+</section>
+
+<!-- GAME HUD -->
+<section id="hud" class="layer hidden">
+  <header class="bar">
+    <button class="icon-btn" id="hudBack" data-i18n-aria="back">‹</button>
+    <div class="hud-title">
+      <div id="hudLabel"></div>
+      <div class="hud-score" id="hudScore">0</div>
+    </div>
+    <div class="goals" id="goals"></div>
+  </header>
+</section>
+
+<!-- LEVEL INTRO -->
+<section id="intro" class="layer modal hidden">
+  <div class="card">
+    <div class="eyebrow" id="introLevel"></div>
+    <h2 id="introGoal"></h2>
+    <div class="goal-row" id="introGoals"></div>
+    <div class="hard hidden" id="introHard" data-i18n="hardLevel">Hard level</div>
+    <button class="btn primary" id="introStart" data-i18n="start">Start</button>
+  </div>
+</section>
+
+<!-- RESULT -->
+<section id="result" class="layer modal hidden">
+  <div class="card">
+    <div class="result-stars" id="resStars"></div>
+    <h2 id="resTitle"></h2>
+    <p class="sub" id="resSub"></p>
+    <div class="big-num" id="resScore"></div>
+    <button class="btn primary" id="resPrimary"></button>
+    <button class="btn ghost" id="resSecondary"></button>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section id="settings" class="layer modal hidden">
+  <div class="card">
+    <h2 data-i18n="settings">Settings</h2>
+    <label class="set-row"><span data-i18n="sound">Sound</span><input type="checkbox" id="setSound" class="switch"></label>
+    <label class="set-row"><span data-i18n="haptics">Haptics</span><input type="checkbox" id="setVibe" class="switch"></label>
+    <label class="set-row"><span data-i18n="language">Language</span>
+      <select id="setLang"><option value="en">English</option><option value="tr">Türkçe</option></select>
+    </label>
+    <button class="btn ghost" id="setClose" data-i18n="close">Close</button>
+  </div>
+</section>
+
+<div id="toasts"></div>
+
+<script src="i18n.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
