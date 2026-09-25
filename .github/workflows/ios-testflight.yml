@@ -1,6 +1,6 @@
 # iOS derleyip TestFlight'a yükler. Mac gerekmez: GitHub'ın macOS makinesinde çalışır.
-# Arşiv imzasız alınır; dışa aktarma adımı App Store dağıtım sertifikası ve profilini
-# otomatik oluşturup imzalar. Böylece hesapta kayıtlı cihaz gerekmez.
+# Arşiv otomatik imzalamayla (geliştirme profili) alınır; bunun için Apple hesabında en az bir
+# kayıtlı iPhone gerekir. Dışa aktarma adımı App Store dağıtım imzasını otomatik atar.
 # Tetikleme: `ios-v*` etiketi push etmek (ör. git tag ios-v1.0.1 && git push origin ios-v1.0.1).
 # Gerekli repo secret'ları (Settings → Secrets and variables → Actions):
 #   APPLE_TEAM_ID   : Apple Developer takım kimliği (10 karakter)
@@ -22,6 +22,17 @@ jobs:
       ISSUER: ${{ secrets.ASC_ISSUER_ID }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Xcode 26 seç
+        run: |
+          # App Store Connect yalnızca iOS 26 SDK (Xcode 26+) ile derlenen uygulamaları kabul ediyor
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$X" ]; then
+            echo "::error::Makinede Xcode 26 yok. Mevcut: $(ls -d /Applications/Xcode*.app | xargs -n1 basename | tr '\n' ' ')"
+            exit 1
+          fi
+          sudo xcode-select -s "$X/Contents/Developer"
+          xcodebuild -version
 
       - uses: actions/setup-node@v4
         with:
@@ -45,7 +56,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/keys"
           printf '%s' "${{ secrets.ASC_KEY_P8 }}" > "$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8"
 
-      - name: Arşivle (imzasız; imza dışa aktarırken dağıtım profiliyle atılır)
+      - name: Arşivle (otomatik imzalama)
         run: |
           set -o pipefail
           xcodebuild archive \
@@ -54,8 +65,12 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8" \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER" \
             DEVELOPMENT_TEAM="$TEAM" \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_STYLE=Automatic \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} 2>&1 | tee "$RUNNER_TEMP/archive.log"
 
       - name: Dışa aktar ve App Store Connect'e yükle
