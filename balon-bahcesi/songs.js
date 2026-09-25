@@ -1,50 +1,84 @@
-/* BALON BAHÇESİ — şarkılar.
- * Hepsi kamu malı ezgiler ya da oyun için yazılmış özgün melodiler.
- * Notalar bilimsel perde gösterimiyle (C4 = orta Do). Her dokunuş bir sonraki notayı çalar.
+/* Drift Garden — songs.
+ * Public-domain works and traditional melodies, plus two originals written for the game.
+ * Notes use scientific pitch (C4 = middle C). `drone` is the root note played softly underneath.
  */
-window.BALON_SONGS = [
+window.DRIFT_SONGS = [
   {
-    id: 'twinkle', name: 'Parla Parla Küçük Yıldız', origin: 'Fransız halk ezgisi', price: 0,
-    notes: 'C4 C4 G4 G4 A4 A4 G4 F4 F4 E4 E4 D4 D4 C4 G4 G4 F4 F4 E4 E4 D4 G4 G4 F4 F4 E4 E4 D4 C4 C4 G4 G4 A4 A4 G4 F4 F4 E4 E4 D4 D4 C4',
-  },
-  {
-    id: 'frere', name: 'Uyuyor musun?', origin: 'Fransız halk şarkısı (Frère Jacques)', price: 0,
-    notes: 'C4 D4 E4 C4 C4 D4 E4 C4 E4 F4 G4 E4 F4 G4 G4 A4 G4 F4 E4 C4 G4 A4 G4 F4 E4 C4 C4 G3 C4 C4 G3 C4',
-  },
-  {
-    id: 'mary', name: 'Küçük Kuzu', origin: 'Amerikan çocuk şarkısı (Mary Had a Little Lamb)', price: 0,
-    notes: 'E4 D4 C4 D4 E4 E4 E4 D4 D4 D4 E4 G4 G4 E4 D4 C4 D4 E4 E4 E4 E4 D4 D4 E4 D4 C4',
-  },
-  {
-    id: 'bahce', name: 'Bahçe Valsi', origin: 'Özgün beste', price: 15,
-    notes: 'E4 G4 A4 G4 E4 D4 C4 D4 E4 G4 E4 D4 E4 G4 A4 C5 A4 G4 E4 G4 A4 G4 E4 D4 C5 A4 G4 E4 G4 A4 C5 D5 C5 A4 G4 E4 D4 E4 G4 A4 G4 E4 D4 E4 C4',
-  },
-  {
-    id: 'london', name: 'Londra Köprüsü', origin: 'İngiliz halk şarkısı', price: 20,
-    notes: 'G4 A4 G4 F4 E4 F4 G4 D4 E4 F4 E4 F4 G4 G4 A4 G4 F4 E4 F4 G4 D4 G4 E4 C4',
-  },
-  {
-    id: 'row', name: 'Kürek Çek', origin: 'Amerikan halk şarkısı (Row, Row, Row Your Boat)', price: 20,
-    notes: 'C4 C4 C4 D4 E4 E4 D4 E4 F4 G4 C5 C5 C5 G4 G4 G4 E4 E4 E4 C4 C4 C4 G4 F4 E4 D4 C4',
-  },
-  {
-    id: 'yagmur', name: 'Yağmur Damlaları', origin: 'Özgün beste', price: 25,
-    notes: 'A4 C5 D5 C5 A4 G4 A4 C5 G4 E4 D4 E4 G4 A4 G4 E4 D4 E4 G4 A4 C5 A4 G4 E4 D4 C4 D4 E4 G4 E4 D4 C4',
-  },
-  {
-    id: 'ode', name: 'Neşeye Övgü', origin: 'Beethoven, 9. Senfoni (1824)', price: 30,
+    id: 'ode', price: 0, drone: 'C3',
+    name: { en: 'Ode to Joy', tr: 'Neşeye Övgü' },
+    origin: { en: 'Beethoven, Symphony No. 9 (1824)', tr: 'Beethoven, 9. Senfoni (1824)' },
     notes: 'E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 E4 D4 D4 E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 D4 C4 C4 D4 D4 E4 C4 D4 E4 F4 E4 C4 D4 E4 F4 E4 D4 C4 D4 G3 E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 D4 C4 C4',
   },
   {
-    id: 'jingle', name: 'Kızak Zilleri', origin: 'James Lord Pierpont (1857)', price: 30,
-    notes: 'E4 E4 E4 E4 E4 E4 E4 G4 C4 D4 E4 F4 F4 F4 F4 F4 E4 E4 E4 E4 D4 D4 E4 D4 G4 E4 E4 E4 E4 E4 E4 E4 G4 C4 D4 E4 F4 F4 F4 F4 F4 E4 E4 E4 G4 G4 F4 D4 C4',
+    id: 'grace', price: 0, drone: 'G2',
+    name: { en: 'Amazing Grace', tr: 'Amazing Grace' },
+    origin: { en: 'Traditional hymn (1835)', tr: 'Geleneksel ilahi (1835)' },
+    notes: 'D4 G4 B4 A4 G4 B4 A4 G4 E4 D4 D4 G4 B4 A4 G4 B4 A4 D5 B4 D5 B4 D5 B4 G4 D4 E4 G4 E4 D4 D4 G4 B4 A4 G4 B4 A4 G4',
   },
   {
-    id: 'brahms', name: 'Brahms Ninnisi', origin: 'Johannes Brahms (1868)', price: 35,
+    id: 'scarborough', price: 0, drone: 'D3',
+    name: { en: 'Scarborough Fair', tr: 'Scarborough Fair' },
+    origin: { en: 'Traditional English ballad', tr: 'Geleneksel İngiliz baladı' },
+    notes: 'D4 D4 A4 A4 E4 F4 E4 D4 A4 C5 D5 C5 A4 B4 G4 A4 D5 D5 D5 C5 A4 A4 G4 F4 E4 D4 C4 D4 A4 G4 F4 E4 D4 C4 D4',
+  },
+  {
+    id: 'evening', price: 15, drone: 'C3',
+    name: { en: 'Evening Waltz', tr: 'Akşam Valsi' },
+    origin: { en: 'Original', tr: 'Özgün beste' },
+    notes: 'E4 G4 A4 G4 E4 D4 C4 D4 E4 G4 E4 D4 E4 G4 A4 C5 A4 G4 E4 G4 A4 G4 E4 D4 C5 A4 G4 E4 G4 A4 C5 D5 C5 A4 G4 E4 D4 E4 G4 A4 G4 E4 D4 E4 C4',
+  },
+  {
+    id: 'morning', price: 20, drone: 'C3',
+    name: { en: 'Morning Mood', tr: 'Sabah' },
+    origin: { en: 'Grieg, Peer Gynt (1875)', tr: 'Grieg, Peer Gynt (1875)' },
+    notes: 'G4 E4 D4 C4 D4 E4 G4 E4 D4 C4 D4 E4 D4 E4 G4 E4 G4 A4 E4 A4 G4 E4 D4 C4 G4 E4 D4 C4 D4 E4 G4 E4 D4 C4 D4 E4 D4 E4 G4 E4 G4 A4 E4 A4 G4 E4 D4 C4',
+  },
+  {
+    id: 'minuet', price: 20, drone: 'G2',
+    name: { en: 'Minuet in G', tr: 'Sol Majör Minuet' },
+    origin: { en: 'Christian Petzold (c. 1725)', tr: 'Christian Petzold (yak. 1725)' },
+    notes: 'D5 G4 A4 B4 C5 D5 G4 G4 E5 C5 D5 E5 F#5 G5 G4 G4 C5 D5 C5 B4 A4 B4 C5 B4 A4 G4 F#4 G4 A4 B4 G4 A4',
+  },
+  {
+    id: 'rain', price: 25, drone: 'A2',
+    name: { en: 'Rain on Glass', tr: 'Camdaki Yağmur' },
+    origin: { en: 'Original', tr: 'Özgün beste' },
+    notes: 'A4 C5 D5 C5 A4 G4 A4 C5 G4 E4 D4 E4 G4 A4 G4 E4 D4 E4 G4 A4 C5 A4 G4 E4 D4 C4 D4 E4 G4 E4 D4 C4',
+  },
+  {
+    id: 'largo', price: 25, drone: 'C3',
+    name: { en: 'Going Home', tr: 'Eve Dönüş' },
+    origin: { en: 'Dvořák, New World Symphony (1893)', tr: 'Dvořák, Yeni Dünya Senfonisi (1893)' },
+    notes: 'E4 G4 G4 E4 D4 C4 D4 E4 G4 E4 D4 E4 G4 G4 E4 D4 C4 D4 E4 D4 C4 C4 E4 G4 G4 E4 D4 C4 D4 E4 G4 E4 D4 E4 G4 G4 E4 D4 C4 D4 E4 D4 C4 C4',
+  },
+  {
+    id: 'greensleeves', price: 30, drone: 'A2',
+    name: { en: 'Greensleeves', tr: 'Greensleeves' },
+    origin: { en: 'Traditional English (16th c.)', tr: 'Geleneksel İngiliz (16. yy)' },
+    notes: 'A4 C5 D5 E5 F5 E5 D5 B4 G4 A4 B4 C5 A4 A4 G#4 A4 B4 G#4 E4 A4 C5 D5 E5 F5 E5 D5 B4 G4 A4 B4 C5 B4 A4 G#4 F#4 G#4 A4 A4 G5 G5 F#5 E5 D5 B4 G4 A4 B4 C5 A4 A4 G#4 A4 B4 G#4 E4 G5 G5 F#5 E5 D5 B4 G4 A4 B4 C5 B4 A4 G#4 F#4 G#4 A4 A4',
+  },
+  {
+    id: 'elise', price: 35, drone: 'A2',
+    name: { en: 'Für Elise', tr: 'Für Elise' },
+    origin: { en: 'Beethoven (1810)', tr: 'Beethoven (1810)' },
+    notes: 'E5 D#5 E5 D#5 E5 B4 D5 C5 A4 C4 E4 A4 B4 E4 G#4 B4 C5 E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 C4 E4 A4 B4 E4 C5 B4 A4',
+  },
+  {
+    id: 'canon', price: 35, drone: 'C3',
+    name: { en: 'Canon', tr: 'Kanon' },
+    origin: { en: 'Pachelbel (c. 1680)', tr: 'Pachelbel (yak. 1680)' },
+    notes: 'E5 D5 C5 B4 A4 G4 A4 B4 C5 B4 A4 G4 F4 E4 F4 D4 E4 D4 C4 B3 A3 G3 A3 B3 C4 B3 A3 G3 F3 E3 F3 G3',
+  },
+  {
+    id: 'brahms', price: 40, drone: 'C3',
+    name: { en: "Brahms' Lullaby", tr: 'Brahms Ninnisi' },
+    origin: { en: 'Johannes Brahms (1868)', tr: 'Johannes Brahms (1868)' },
     notes: 'E4 E4 G4 E4 E4 G4 E4 G4 C5 B4 A4 A4 G4 D4 E4 F4 D4 D4 E4 F4 D4 F4 B4 A4 G4 B4 C5 C4 C4 C5 A4 F4 G4 E4 C4 F4 G4 A4 G4 C4 C4 C5 A4 F4 G4 E4 C4 F4 E4 D4 C4',
   },
   {
-    id: 'greensleeves', name: 'Yeşil Kollar', origin: 'İngiliz halk ezgisi (Greensleeves, 16. yy)', price: 40,
-    notes: 'A4 C5 D5 E5 F5 E5 D5 B4 G4 A4 B4 C5 A4 A4 G#4 A4 B4 G#4 E4 A4 C5 D5 E5 F5 E5 D5 B4 G4 A4 B4 C5 B4 A4 G#4 F#4 G#4 A4 A4 G5 G5 F#5 E5 D5 B4 G4 A4 B4 C5 A4 A4 G#4 A4 B4 G#4 E4 G5 G5 F#5 E5 D5 B4 G4 A4 B4 C5 B4 A4 G#4 F#4 G#4 A4 A4',
+    id: 'auld', price: 40, drone: 'C3',
+    name: { en: 'Auld Lang Syne', tr: 'Auld Lang Syne' },
+    origin: { en: 'Traditional Scottish', tr: 'Geleneksel İskoç' },
+    notes: 'G4 C5 C5 C5 E5 D5 C5 D5 E5 D5 C5 C5 E5 G5 A5 A5 G5 E5 E5 C5 D5 C5 D5 E5 D5 C5 A4 A4 G4 C5',
   },
 ];
