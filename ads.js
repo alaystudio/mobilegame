@@ -176,13 +176,13 @@
              <button class="ad-btn" id="adClaim" disabled>${t('ad.claim')}</button>
            </div>`);
         const claim = el.querySelector('#adClaim');
-        const t = setInterval(() => {
+        const timer = setInterval(() => {
           left--;
           const lbl = el.querySelector('#adLeft');
           if (lbl) lbl.textContent = Math.max(0, left);
-          if (left <= 0) { clearInterval(t); claim.disabled = false; el.querySelector('.ad-count').textContent = 'Reklam bitti'; }
+          if (left <= 0) { clearInterval(timer); claim.disabled = false; el.querySelector('.ad-count').textContent = 'Reklam bitti'; }
         }, 1000);
-        const done = (ok) => { clearInterval(t); el.remove(); resolve(ok); };
+        const done = (ok) => { clearInterval(timer); el.remove(); resolve(ok); };
         el.querySelector('#adClose').addEventListener('click', () => done(false));
         claim.addEventListener('click', () => done(true));
       });
@@ -195,11 +195,11 @@
            <div class="ad-actions"><button class="ad-btn" id="adSkip" disabled>2</button></div>`);
         const b = el.querySelector('#adSkip');
         let left = 2;
-        const t = setInterval(() => {
+        const timer = setInterval(() => {
           left--;
-          if (left <= 0) { clearInterval(t); b.disabled = false; b.textContent = t('ad.closeX'); } else b.textContent = left;
+          if (left <= 0) { clearInterval(timer); b.disabled = false; b.textContent = t('ad.closeX'); } else b.textContent = left;
         }, 1000);
-        b.addEventListener('click', () => { clearInterval(t); el.remove(); resolve(); });
+        b.addEventListener('click', () => { clearInterval(timer); el.remove(); resolve(); });
       });
     },
     purchaseRemoveAds() {

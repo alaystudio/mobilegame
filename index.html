@@ -23,6 +23,7 @@
   <header class="bar">
     <div class="pill" id="streakPill">🔥 <span id="streakVal">1</span></div>
     <div class="bar-right">
+      <button class="pill pill-btn" id="settingsBtn" data-i18n-aria="menu.settings" aria-label="Settings">⚙</button>
       <button class="pill pill-btn" id="soundBtn" data-i18n-aria="menu.sound" aria-label="Sound"><span id="soundIcon">🔊</span></button>
       <div class="pill star">★ <span id="menuStars">0</span></div>
     </div>
@@ -60,6 +61,7 @@
   <div class="over-actions">
     <button class="btn reward hidden" id="doubleBtn"><span data-i18n="over.double">▶ Yıldızları 2 katına çıkar</span> <b>+<span id="doubleAmt">0</span> ★</b></button>
     <button class="btn primary" id="retryBtn">TEKRAR</button>
+    <button class="btn skip hidden" id="skipBtn"><span class="bt" id="skipLabel"></span><small id="skipSub"></small></button>
     <button class="btn boost small" id="overBoostBtn"><span class="bt">▶ Güçlü başla</span><small data-i18n="over.boostSub">kalkan + mıknatıs</small></button>
     <button class="btn ghost" id="homeBtn" data-i18n="over.menu">Menü</button>
   </div>
@@ -91,6 +93,20 @@
 </section>
 
 <!-- SIRALAMA -->
+<section id="settings" class="sheet hidden">
+  <div class="sheet-panel">
+    <div class="sheet-head">
+      <h2 data-i18n="settings.title">Ayarlar</h2>
+      <button class="close" data-close>✕</button>
+    </div>
+    <h3 class="sheet-sub" data-i18n="settings.control">Kontrol</h3>
+    <div class="opt-list">
+      <button class="opt" data-control="tap"><b data-i18n="control.tap">Tek dokunuş</b><span data-i18n="control.tapDesc">Ekranın herhangi bir yerine dokun. Top her dokunuşta bir yörünge ilerler, en içte ve en dışta yön değiştirir.</span></button>
+      <button class="opt" data-control="zones"><b data-i18n="control.zones">İki bölge</b><span data-i18n="control.zonesDesc">Ekranın üst yarısına dokun: dışa çık. Alt yarısına dokun: içe gir. 3 ve 4 yörüngede daha kolay.</span></button>
+    </div>
+  </div>
+</section>
+
 <section id="board" class="sheet hidden">
   <div class="sheet-panel">
     <div class="sheet-head">
@@ -165,6 +181,7 @@
 <script src="native.js"></script>
 <script src="ads.js"></script>
 <script src="leaderboard.js"></script>
+<script src="analytics.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

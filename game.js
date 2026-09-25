@@ -124,6 +124,7 @@
     best: 0, stars: 0, skin: 'neon', owned: ['neon'], sound: true, vibe: true,
     games: 0, totalStars: 0, tutorialDone: false, upg: {},
     pid: '', name: '', ch: {}, lbSent: {}, playSec: 0,
+    control: 'tap', maxRings: 2, zoneTip: false,
     lastDay: null, streak: 0, missionsDay: null, missions: [],
   };
   const save = (() => {
@@ -510,6 +511,7 @@
       ringCount: 2, ringAnim: 1, pendingRings: 0, breath: 0, dir: -1, dirHint: 0,
       shield: 0, shieldProg: 0, invuln: 0, pw: { magnet: 0, slow: 0, double: 0 }, pwMax: {},
       revived: false, slowF: 1, speed: OMEGA_START,
+      phaseT0: 0, maxRingsRun: 2, startRings: 2, revives: 0, zoneTipNow: false,
     });
     S.items.length = 0;
     if (ch) S.tutorial = false;
@@ -517,6 +519,19 @@
     if (S.mod === 'rings3') { S.ringCount = 3; S.ring = 2; S.dir = -1; }
     S.phaseStart = 0;
     S.introSlow = 0;
+    // Kaldığın yerden: daha önce ulaşılan yörünge evresinden başla (meydan okumada yok)
+    const skip = !ch && opts.startRings >= 3 ? opts.startRings : 0;
+    if (skip) {
+      const idx = LEVELS.findIndex((l) => l.rings === skip);
+      S.ringCount = skip; S.ring = skip - 1; S.dir = -1;
+      S.passed = S.phaseStart = LEVELS[idx].at;
+      S.levelIdx = idx;
+      S.tutorial = false;
+      S.introSlow = 3;
+      S.startRings = skip;
+    }
+    S.maxRingsRun = S.ringCount;
+    S.dirHint = save.control === 'zones' || skip ? 5 : 0;
     S.omega = S.speed = omegaTarget();
     S.radius = S.from = ringR(S.ring);
     if (boostReady && !ch) {
@@ -527,18 +542,28 @@
       updateBoostButtons();
     }
     if (ch) popup(t('pop.challenge', { name: I18N.upper(today.mod.name) }), CX, CY - outerR() - 40, '#ffd84d', 20, 2.2);
+    if (skip) popup(t('pop.skip', { n: skip }), CX, CY + outerR() + 44, rgba(LEVELS[S.levelIdx].ring), 26, 1.8);
     S.hint = S.tutorial ? 1 : 0;
     S.obs.length = 0; S.stars.length = 0; S.pops.length = 0; S.trail.length = 0;
     S.nextSpawn = S.angle + Math.PI * 0.55;
     hideAll();
   }
 
-  function doSwitch() {
+  // want: +1 dışa, -1 içe (iki bölge kontrolü). Verilmezse gel-git: S.dir yönünde bir adım.
+  function doSwitch(want) {
     const old = S.ring;
-    S.from = S.radius;
-    S.ring += S.dir;
-    if (S.ring >= S.ringCount - 1) S.dir = -1;
-    if (S.ring <= 0) S.dir = 1;
+    if (want) {
+      const to = Math.max(0, Math.min(S.ringCount - 1, S.ring + want));
+      if (to === S.ring) { vibrate(4); return; }   // zaten en dışta/içte
+      S.from = S.radius;
+      S.ring = to;
+      S.dir = want;
+    } else {
+      S.from = S.radius;
+      S.ring += S.dir;
+      if (S.ring >= S.ringCount - 1) S.dir = -1;
+      if (S.ring <= 0) S.dir = 1;
+    }
     S.switchP = 0;
     // PERFECT: bırakılan halkadaki engele çarpmaya çok az kala kaçış
     for (const o of S.obs) {
@@ -649,6 +674,7 @@
     doRevive();
   }
   function doRevive() {
+    S.revives = (S.revives || 0) + 1;
     $('revive').classList.add('hidden');
     S.revived = true;
     S.mode = 'play';
@@ -707,6 +733,11 @@
     if (S.challenge) save.ch.best = Math.max(save.ch.best || 0, S.score);
     const done = progressMissions({ score: S.score, stars: S.runStars, perfect: S.runPerfects, combo: S.maxCombo, games: 1 });
     persist();
+    YorungeStats.run({
+      score: S.score, passed: S.passed, t: S.runT, rings: S.maxRingsRun, start: S.startRings || 2,
+      dring: S.ringCount, pt: S.runT - (S.phaseT0 || 0), perf: S.runPerfects, rev: S.revives || 0,
+      ctrl: save.control, ch: !!S.challenge, mod: S.mod || '',
+    });
 
     $('overScore').textContent = S.score;
     $('overBest').textContent = save.best;
@@ -730,6 +761,7 @@
     $('doubleBtn').classList.toggle('hidden', !(S.runStars > 0 && YorungeAds.rewardedLeft() > 0));
     $('doubleAmt').textContent = S.runStars;
     updateBoostButtons();
+    updateSkipButton();
     show('over');
     submitScores();
     const retry = $('retryBtn');
@@ -806,6 +838,10 @@
       S.ringAnim = 0;
       S.phaseStart = S.passed;
       S.introSlow = 4;   // yeni halkayı öğrenmek için birkaç saniye yavaş çekim
+      S.phaseT0 = S.runT;
+      S.maxRingsRun = Math.max(S.maxRingsRun, S.ringCount);
+      if (!S.challenge && S.ringCount > (save.maxRings || 2)) save.maxRings = S.ringCount;
+      if (S.ringCount === 3 && save.control === 'tap' && !save.zoneTip) { save.zoneTip = true; S.zoneTipNow = true; }
       if (S.ring < S.ringCount - 1 && S.ring > 0) { /* yön korunur */ } else if (S.ring === 0) S.dir = 1;
       else S.dir = -1;
       S.dirHint = 6;
@@ -1031,6 +1067,22 @@
     ctx.globalAlpha = 1;
   }
 
+  // İki bölge kontrolü: halkaların üstünde "dışa", altında "içe" yazar; gidilemeyen yön sönük
+  function drawZoneGuide() {
+    const strong = S.dirHint > 0 ? Math.min(1, S.dirHint) : 0;
+    const base = 0.3 + 0.55 * strong;
+    const canOut = S.ring < S.ringCount - 1, canIn = S.ring > 0;
+    ctx.save();
+    ctx.font = '800 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = `rgba(255,255,255,${canOut ? base : base * 0.35})`;
+    ctx.fillText('▲ ' + t('zone.out'), CX, CY - outerR() - 22);
+    ctx.fillStyle = `rgba(255,255,255,${canIn ? base : base * 0.35})`;
+    ctx.fillText('▼ ' + t('zone.in'), CX, CY + outerR() + 22);
+    ctx.restore();
+  }
+
   function drawPowerHud() {
     // aktif güçler: üst ortada kalan süre halkalarıyla
     const act = Object.keys(POWERS).filter((t) => S.pw[t] > 0);
@@ -1118,7 +1170,7 @@
     }
 
     // hedef halka önizlemesi (3+ halkada gel-git kontrolünü anlaşılır kılar)
-    if (S.ringCount > 2 && S.mode === 'play' && S.ringAnim >= 1) drawTargetPreview();
+    if (S.ringCount > 2 && S.mode === 'play' && S.ringAnim >= 1 && save.control === 'tap') drawTargetPreview();
 
     // çekirdek
     const kick = 1 + S.coreKick * 0.08 + Math.sin(S.time * 3) * 0.015;
@@ -1264,7 +1316,7 @@
         ctx.fill();
         ctx.globalAlpha = 1;
       }
-      if (S.ringCount > 2 && S.mode === 'play') drawDirArrow(col);
+      if (S.ringCount > 2 && S.mode === 'play' && save.control === 'tap') drawDirArrow(col);
     }
 
     // parçacıklar
@@ -1300,6 +1352,7 @@
       ctx.fillRect(0, 0, W, H);
     }
     if (S.mode === 'play' && S.mod !== 'nopower') drawPowerHud();
+    if (S.mode === 'play' && save.control === 'zones') drawZoneGuide();
     if (S.mode === 'play' || S.mode === 'dying') {
       const top = SAFE_TOP + 26;
       ctx.font = '800 14px system-ui, sans-serif';
@@ -1318,10 +1371,16 @@
       ctx.globalAlpha = Math.min(1, S.dirHint);
       ctx.fillStyle = '#fff';
       ctx.font = '800 17px system-ui, sans-serif';
-      ctx.fillText(t('hint.pingpong'), CX, y);
+      const zones = save.control === 'zones';
+      ctx.fillText(zones ? t('hint.zones1') : t('hint.pingpong'), CX, y);
       ctx.font = '600 14px system-ui, sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.fillText(t('hint.arrow'), CX, y + 22);
+      ctx.fillText(zones ? t('hint.zones2') : t('hint.arrow'), CX, y + 22);
+      if (S.zoneTipNow) {
+        ctx.font = '700 13px system-ui, sans-serif';
+        ctx.fillStyle = '#ffd84d';
+        ctx.fillText(t('hint.zoneTip'), CX, y - 26);
+      }
       ctx.globalAlpha = 1;
     }
 
@@ -1359,7 +1418,7 @@
   }
 
   // ---------------------------------------------------------------- arayüz
-  const screens = ['menu', 'over', 'skins', 'missions', 'powers', 'revive', 'board', 'gift'];
+  const screens = ['menu', 'over', 'skins', 'missions', 'powers', 'revive', 'board', 'gift', 'settings'];
   function hideAll() { screens.forEach((s) => $(s).classList.add('hidden')); }
   function show(id) { $(id).classList.remove('hidden'); }
 
@@ -1516,6 +1575,33 @@
       b.querySelector('.bt').textContent = boostReady ? t('menu.boostReady') : t('menu.boost');
     }
   }
+  // Kaldığın yerden: daha önce ulaşılan en yüksek yörünge evresinden başla (reklam veya yıldız)
+  const SKIP_COST = 25;
+  const skipRings = () => Math.min(4, save.maxRings || 2);
+  function updateSkipButton() {
+    const n = skipRings();
+    const visible = n >= 3 && !S.challenge;
+    $('skipBtn').classList.toggle('hidden', !visible);
+    if (!visible) return;
+    $('skipLabel').textContent = t('skip.label', { n });
+    $('skipSub').textContent = YorungeAds.rewardedLeft() > 0 ? t('skip.ad') : t('skip.stars', { n: SKIP_COST });
+  }
+  async function takeSkip() {
+    const n = skipRings();
+    if (n < 3) return;
+    if (YorungeAds.rewardedLeft() > 0) {
+      const ok = await YorungeAds.showRewarded('skip');
+      if (!ok) return;
+    } else if (save.stars >= SKIP_COST) {
+      save.stars -= SKIP_COST;
+      persist();
+    } else {
+      toast(t('skip.need', { n: SKIP_COST - save.stars }));
+      return;
+    }
+    startRun({ startRings: n });
+  }
+
   async function takeBoost() {
     if (boostReady) return;
     const ok = await YorungeAds.showRewarded('boost');
@@ -1631,6 +1717,19 @@
   $('challengeBtn').addEventListener('click', () => startChallenge());
   $('boostBtn').addEventListener('click', () => takeBoost());
   $('overBoostBtn').addEventListener('click', (e) => { e.stopPropagation(); takeBoost(); });
+  $('skipBtn').addEventListener('click', (e) => { e.stopPropagation(); takeSkip(); });
+  function renderSettings() {
+    document.querySelectorAll('#settings .opt').forEach((b) => b.classList.toggle('selected', b.dataset.control === save.control));
+  }
+  $('settingsBtn').addEventListener('click', () => { renderSettings(); show('settings'); });
+  document.querySelectorAll('#settings .opt').forEach((b) => b.addEventListener('click', () => {
+    save.control = b.dataset.control;
+    persist();
+    renderSettings();
+    Sound.init();
+    Sound.tap(1);
+    toast(t('control.saved', { name: t('control.' + save.control) }));
+  }));
   $('doubleBtn').addEventListener('click', (e) => { e.stopPropagation(); doubleStars(); });
   $('reviveAdBtn').addEventListener('click', (e) => { e.stopPropagation(); acceptReviveAd(); });
   $('giftTake').addEventListener('click', () => { $('gift').classList.add('hidden'); updateMenuInfo(); });
@@ -1674,7 +1773,8 @@
     if (e.target.closest && e.target.closest('button, .sheet, .screen')) return;
     e.preventDefault();
     if (S.paused) { S.paused = false; last = performance.now(); return; }
-    doSwitch();
+    if (save.control === 'zones') doSwitch(e.clientY < H / 2 ? 1 : -1);
+    else doSwitch();
   }, { passive: false });
 
   window.addEventListener('keydown', (e) => {
@@ -1685,16 +1785,18 @@
     if (e.repeat) return;
     if (S.mode === 'play') {
       if (S.paused) S.paused = false;
+      else if (save.control === 'zones' && e.code === 'ArrowUp') doSwitch(1);
+      else if (save.control === 'zones' && e.code === 'ArrowDown') doSwitch(-1);
       else doSwitch();
     } else if (S.mode === 'over' && performance.now() - (S.overAt || 0) > 450) requestRun();
     else if (S.mode === 'revive') acceptRevive();
-    else if (S.mode === 'menu' && ['skins', 'missions', 'powers', 'board', 'gift'].every((id) => $(id).classList.contains('hidden'))) startRun();
+    else if (S.mode === 'menu' && ['skins', 'missions', 'powers', 'board', 'gift', 'settings'].every((id) => $(id).classList.contains('hidden'))) startRun();
   });
 
   // Android geri tuşu: açık paneli kapat > oyunu duraklat > menüye dön > (menüdeyse) çık
   YorungeNative.onBack(() => {
     if (document.querySelector('.ad-overlay')) return true;
-    const sheet = ['board', 'powers', 'skins', 'missions', 'gift'].find((id) => !$(id).classList.contains('hidden'));
+    const sheet = ['board', 'powers', 'skins', 'missions', 'gift', 'settings'].find((id) => !$(id).classList.contains('hidden'));
     if (sheet) { $(sheet).classList.add('hidden'); updateMenuInfo(); return true; }
     if (S.mode === 'play') { S.paused = true; return true; }
     if (S.mode === 'revive') { finishRun(); return true; }

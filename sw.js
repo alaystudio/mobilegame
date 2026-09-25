@@ -1,5 +1,5 @@
 // Önbellek sürümünü her yayında artır ki oyuncular yeni sürümü alsın.
-const CACHE = 'orbitap-v1';
+const CACHE = 'orbitap-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
   './native.js',
   './ads.js',
   './leaderboard.js',
+  './analytics.js',
   './game.js',
   './manifest.webmanifest',
   './icons/icon.svg',

@@ -11,7 +11,8 @@
     "assets": "node scripts/make-store-assets.mjs && npx capacitor-assets generate --android --ios --iconBackgroundColor \"#05060f\" --iconBackgroundColorDark \"#05060f\" --splashBackgroundColor \"#05060f\" --splashBackgroundColorDark \"#05060f\"",
     "screenshots": "node scripts/screenshots.mjs",
     "serve": "npx --yes serve -l 8123 .",
-    "aab": "node scripts/build-aab.mjs"
+    "aab": "node scripts/build-aab.mjs",
+    "stats": "node scripts/stats.mjs"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.1.0",
